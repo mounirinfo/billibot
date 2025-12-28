@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -19,6 +19,7 @@ import {
   IconButton,
   Tooltip,
   Fade,
+  Chip,
 } from '@mui/material';
 import {
   Add,
@@ -30,6 +31,9 @@ import {
   MoreVert,
   Delete,
   Logout,
+  School,
+  SupervisorAccount,
+  Groups,
 } from '@mui/icons-material';
 import { User } from '@supabase/supabase-js';
 
@@ -48,7 +52,13 @@ interface SidebarProps {
   onCreateConversation: () => void;
   onSelectConversation: (id: string) => void;
   onDeleteConversation: (id: string) => void;
-  onSignOut: () => void;
+}
+
+interface UserProfile {
+  role: 'student' | 'teacher' | 'admin' | 'super_admin';
+  full_name: string | null;
+  email: string;
+  avatar_url: string | null;
 }
 
 export default function Sidebar({
@@ -59,10 +69,107 @@ export default function Sidebar({
   onCreateConversation,
   onSelectConversation,
   onDeleteConversation,
-  onSignOut,
 }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  // Charger le profil au montage du composant
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const response = await fetch('/api/profile');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setProfile(data.profile);
+      } else {
+        console.error('Erreur lors du chargement du profil:', data.error);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement du profil:', error);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setLoggingOut(true);
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        // Nettoyer le localStorage/sessionStorage
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Redirection vers la page de login
+        window.location.href = '/login';
+      } else {
+        const data = await response.json();
+        console.error('Erreur lors de la déconnexion:', data.error);
+        alert('Erreur lors de la déconnexion');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+      alert('Une erreur est survenue');
+    } finally {
+      setLoggingOut(false);
+      setAnchorEl(null);
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'student':
+        return 'Étudiant';
+      case 'teacher':
+        return 'Professeur';
+      case 'admin':
+        return 'Admin';
+      case 'super_admin':
+        return 'Super Admin';
+      default:
+        return 'Utilisateur';
+    }
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'student':
+        return <School sx={{ fontSize: 16 }} />;
+      case 'teacher':
+        return <Groups sx={{ fontSize: 16 }} />;
+      case 'admin':
+      case 'super_admin':
+        return <SupervisorAccount sx={{ fontSize: 16 }} />;
+      default:
+        return <Person sx={{ fontSize: 16 }} />;
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'student':
+        return '#2196F3'; // Bleu
+      case 'teacher':
+        return '#4CAF50'; // Vert
+      case 'admin':
+        return '#FF9800'; // Orange
+      case 'super_admin':
+        return '#F44336'; // Rouge
+      default:
+        return '#9E9E9E'; // Gris
+    }
+  };
 
   const filteredConversations = conversations.filter((conv) =>
     conv.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -294,20 +401,46 @@ export default function Sidebar({
             },
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Avatar sx={{ bgcolor: '#FFD93D', width: 40, height: 40, mr: 1.5 }}>
-              <Person sx={{ color: '#2D9B94' }} />
-            </Avatar>
-            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-              <Typography variant="body2" fontWeight={700} noWrap color="#2D9B94">
-                {user.user_metadata?.full_name || 'Étudiant'}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" noWrap>
-                {user.email}
-              </Typography>
+          {loadingProfile ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CircularProgress size={24} sx={{ color: '#2D9B94' }} />
             </Box>
-            <MoreVert sx={{ color: '#2D9B94' }} />
-          </Box>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar sx={{ bgcolor: '#FFD93D', width: 40, height: 40, mr: 1.5 }}>
+                <Person sx={{ color: '#2D9B94' }} />
+              </Avatar>
+              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                  <Typography variant="body2" fontWeight={700} noWrap color="#2D9B94">
+                    {profile?.full_name || user.user_metadata?.full_name || 'Utilisateur'}
+                  </Typography>
+                  {profile && (
+                    <Chip
+                      icon={getRoleIcon(profile.role)}
+                      label={getRoleLabel(profile.role)}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        bgcolor: getRoleColor(profile.role),
+                        color: 'white',
+                        '& .MuiChip-icon': {
+                          color: 'white',
+                          fontSize: 14,
+                        },
+                      }}
+                    />
+                  )}
+                </Box>
+                <Typography variant="caption" color="text.secondary" noWrap>
+                  {user.email}
+                </Typography>
+              </Box>
+              <MoreVert sx={{ color: '#2D9B94' }} />
+            </Box>
+          )}
         </Paper>
 
         <Menu
@@ -323,14 +456,16 @@ export default function Sidebar({
           }}
         >
           <MenuItem
-            onClick={() => {
-              onSignOut();
-              setAnchorEl(null);
-            }}
+            onClick={handleSignOut}
+            disabled={loggingOut}
             sx={{ py: 1.5, color: '#EF5350' }}
           >
-            <Logout fontSize="small" sx={{ mr: 1.5 }} />
-            Déconnexion
+            {loggingOut ? (
+              <CircularProgress size={20} sx={{ mr: 1.5 }} />
+            ) : (
+              <Logout fontSize="small" sx={{ mr: 1.5 }} />
+            )}
+            {loggingOut ? 'Déconnexion...' : 'Déconnexion'}
           </MenuItem>
         </Menu>
       </Box>

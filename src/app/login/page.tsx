@@ -14,18 +14,27 @@ import {
   Alert,
   Avatar,
   CircularProgress,
+  keyframes,
 } from '@mui/material';
 import {
   Visibility,
   VisibilityOff,
   Email,
   Lock,
-  SmartToy,
 } from '@mui/icons-material';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+
+// Animation de rebond pour le logo
+const bounce = keyframes`
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+`;
 
 export default function LoginPage() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,6 +52,7 @@ export default function LoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
@@ -54,9 +64,10 @@ export default function LoginPage() {
         return;
       }
 
-      // Connexion réussie, redirection vers /chat
-      router.push('/chat');
+      // ✅ Redirection selon le statut et le rôle
+      window.location.href = data.redirectTo || '/chat';
     } catch (err) {
+      console.error('Erreur de connexion:', err);
       setError('Une erreur est survenue. Veuillez réessayer.');
       setLoading(false);
     }
@@ -78,10 +89,10 @@ export default function LoginPage() {
           maxWidth: 450,
           width: '100%',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
+          borderRadius: 3,
         }}
       >
         <CardContent sx={{ p: 4 }}>
-          {/* Logo et titre */}
           <Box
             sx={{
               display: 'flex',
@@ -90,32 +101,42 @@ export default function LoginPage() {
               mb: 4,
             }}
           >
-            <Avatar
+            {/* Logo BilliBot avec animation de rebond */}
+            <Box
               sx={{
                 width: 80,
                 height: 80,
-                bgcolor: '#2D9B94',
                 mb: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                animation: `${bounce} 2s ease-in-out infinite`,
               }}
             >
-              <SmartToy sx={{ fontSize: 48 }} />
-            </Avatar>
+              <Image
+                src="/mon_billi.png"
+                alt="Logo"
+                width={200}
+                height={200}
+                style={{ objectFit: 'contain' }}
+                priority
+              />
+            </Box>
+            
             <Typography variant="h4" fontWeight="bold" color="primary" gutterBottom>
-              Chatbot Éducatif
+              BilliBot
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" textAlign="center">
               Connectez-vous pour continuer votre apprentissage
             </Typography>
           </Box>
 
-          {/* Message d'erreur */}
           {error && (
             <Alert severity="error" sx={{ mb: 3 }}>
               {error}
             </Alert>
           )}
 
-          {/* Formulaire */}
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
@@ -164,7 +185,6 @@ export default function LoginPage() {
               }}
             />
 
-            {/* Lien "Mot de passe oublié" - MODIFIÉ */}
             <Box sx={{ textAlign: 'right', mb: 3 }}>
               <Link
                 href="/forgot-password"
@@ -192,6 +212,8 @@ export default function LoginPage() {
                 mb: 2,
                 py: 1.5,
                 fontSize: '1rem',
+                textTransform: 'none',
+                fontWeight: 600,
               }}
             >
               {loading ? <CircularProgress size={24} color="inherit" /> : 'Se connecter'}

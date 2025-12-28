@@ -39,7 +39,7 @@ interface Conversation {
 }
 
 export default function ChatPage() {
-  const { user, signOut, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth(); // ✅ Retirer signOut
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -252,7 +252,7 @@ export default function ChatPage() {
             onCreateConversation={createConversation}
             onSelectConversation={handleSelectConversation}
             onDeleteConversation={deleteConversation}
-            onSignOut={signOut}
+            // ✅ Retirer onSignOut - la Sidebar gère maintenant le logout directement
           />
         </Drawer>
 
@@ -273,7 +273,6 @@ export default function ChatPage() {
             onCreateConversation={createConversation}
             onSelectConversation={handleSelectConversation}
             onDeleteConversation={deleteConversation}
-            onSignOut={signOut}
           />
         </Drawer>
       </Box>

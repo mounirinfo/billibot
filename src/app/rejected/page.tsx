@@ -16,62 +16,94 @@ import {
   Logout as LogoutIcon,
   Email as EmailIcon,
 } from '@mui/icons-material';
-import { createClient } from '@/lib/supabase/client';
+
+interface ProfileData {
+  account_status: string;
+  rejection_reason: string | null;
+  email: string;
+  full_name: string;
+}
 
 export default function RejectedPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
+  const [userName, setUserName] = useState<string>('');
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const supabase = createClient();
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        router.push('/login');
-        return;
-      }
+      try {
+        const response = await fetch('/api/rejection-status', {
+          method: 'GET',
+          credentials: 'include',
+        });
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('account_status, rejection_reason, email')
-        .eq('id', user.id)
-        .single();
-
-      if (!profile) {
-        router.push('/login');
-        return;
-      }
-
-      // Si le compte n'est pas rejeté, rediriger
-      if (profile.account_status !== 'rejected') {
-        if (profile.account_status === 'approved') {
-          router.push('/chat');
-        } else {
-          router.push('/pending');
+        if (!response.ok) {
+          if (response.status === 401) {
+            router.push('/login');
+            return;
+          }
+          throw new Error('Erreur lors de la récupération du profil');
         }
-        return;
-      }
 
-      setRejectionReason(profile.rejection_reason);
-      setUserEmail(profile.email ?? '');
-      setLoading(false);
+        const data = await response.json();
+        const profile: ProfileData = data.profile;
+
+        if (!profile) {
+          router.push('/login');
+          return;
+        }
+
+        // Si le compte n'est pas rejeté, rediriger
+        if (profile.account_status !== 'rejected') {
+          if (profile.account_status === 'approved') {
+            router.push('/chat');
+          } else if (profile.account_status === 'pending') {
+            router.push('/pending');
+          } else {
+            router.push('/login');
+          }
+          return;
+        }
+
+        setRejectionReason(profile.rejection_reason);
+        setUserEmail(profile.email);
+        setUserName(profile.full_name);
+        setLoading(false);
+      } catch (error) {
+        console.error('Erreur:', error);
+        router.push('/login');
+      }
     };
 
     fetchProfile();
   }, [router]);
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    window.location.href = '/login';
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = '/login';
+      }
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+      window.location.href = '/login';
+    }
   };
 
   const handleContactSupport = () => {
-    window.location.href = `mailto:support@edubot.com?subject=Compte rejeté - ${userEmail}&body=Bonjour,%0D%0A%0D%0AMon compte a été rejeté et je souhaiterais obtenir plus d'informations.%0D%0A%0D%0ARaison du rejet: ${rejectionReason || 'Non spécifiée'}%0D%0A%0D%0ACordialement`;
+    const subject = encodeURIComponent(`Compte rejeté - ${userEmail}`);
+    const body = encodeURIComponent(
+      `Bonjour,\n\nMon compte a été rejeté et je souhaiterais obtenir plus d'informations.\n\nNom: ${userName}\nEmail: ${userEmail}\nRaison du rejet: ${rejectionReason || 'Non spécifiée'}\n\nCordialement`
+    );
+    window.location.href = `mailto:support@billibot.com?subject=${subject}&body=${body}`;
   };
 
   if (loading) {
@@ -176,6 +208,8 @@ export default function RejectedPage() {
                 '&:hover': { bgcolor: '#257d77' },
                 borderRadius: 2,
                 py: 1.5,
+                textTransform: 'none',
+                fontWeight: 600,
               }}
             >
               Contacter le Support
@@ -195,6 +229,8 @@ export default function RejectedPage() {
                 },
                 borderRadius: 2,
                 py: 1.5,
+                textTransform: 'none',
+                fontWeight: 600,
               }}
             >
               Se Déconnecter
@@ -202,9 +238,16 @@ export default function RejectedPage() {
           </Box>
 
           {/* Footer */}
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 3, display: 'block' }}>
-            Email : {userEmail}
-          </Typography>
+          <Box sx={{ mt: 3 }}>
+            {userName && (
+              <Typography variant="caption" color="text.secondary" display="block">
+                {userName}
+              </Typography>
+            )}
+            <Typography variant="caption" color="text.secondary" display="block">
+              {userEmail}
+            </Typography>
+          </Box>
         </Paper>
       </Container>
     </Box>
