@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
+      console.log(" 088888888888 ",JSON.stringify(data))
 
     if (error) {
       console.error('Erreur Supabase:', error);

@@ -53,12 +53,6 @@ export async function POST(request: NextRequest) {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          full_name: fullName,
-          role: role,
-        },
-      },
     });
 
     if (authError) {
@@ -84,18 +78,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Mettre à jour le profil avec les informations complètes
+    // Créer manuellement le profil dans la table profiles
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({
-        phone,
-        school_id: schoolId,
-        school_group_id: schoolGroupId,
-        grade_level: gradeLevel,
+      .insert({
+        id: authData.user.id,
+        email: email,
+        full_name: fullName,
+        phone: phone || null,
+        role: role,
+        school_id: schoolId || null,
+        school_group_id: schoolGroupId || null,
+        grade_level: gradeLevel || null,
         subjects: subjects || [],
-        account_status: 'pending', // Toujours en attente
-      })
-      .eq('id', authData.user.id);
+        account_status: 'pending',
+      });
 
     if (profileError) {
       console.error('Erreur mise à jour profil:', profileError);

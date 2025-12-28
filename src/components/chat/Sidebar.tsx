@@ -111,7 +111,7 @@ export default function Sidebar({
           </Avatar>
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-0.5px' }}>
-              EduBot
+              BilliBot
             </Typography>
             <Typography variant="caption" sx={{ opacity: 0.95, fontWeight: 500 }}>
               Ton assistant d'apprentissage 🎓

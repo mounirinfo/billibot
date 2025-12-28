@@ -32,22 +32,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkSession();
 
     // Écouter les changements d'authentification
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
-
-        if (event === 'SIGNED_IN') {
-          router.push('/chat');
-        }
-        if (event === 'SIGNED_OUT') {
-          router.push('/login');
-        }
-      }
-    );
+    
 
     return () => {
-      subscription.unsubscribe();
     };
   }, [supabase, router]);
 

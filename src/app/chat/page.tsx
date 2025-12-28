@@ -11,6 +11,8 @@ import {
   CircularProgress,
   useMediaQuery,
   useTheme,
+  Alert,
+  Snackbar,
 } from '@mui/material';
 import { Menu as MenuIcon, SmartToy } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
@@ -49,6 +51,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Redirection si non connecté
   useEffect(() => {
@@ -129,73 +132,40 @@ export default function ChatPage() {
     }
   };
 
-  const updateConversationTitle = async (conversationId: string, firstMessage: string) => {
-    const title = firstMessage.slice(0, 50) + (firstMessage.length > 50 ? '...' : '');
-    try {
-      const res = await fetch('/api/conversations', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: conversationId, title }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setConversations(
-          conversations.map((c) => (c.id === conversationId ? data.conversation : c))
-        );
-      }
-    } catch (error) {
-      console.error('Erreur:', error);
-    }
-  };
-
   const sendMessage = async () => {
     if (!message.trim() || !currentConversation) return;
 
     const userMessage = message.trim();
     setMessage('');
     setSending(true);
+    setError(null);
 
     try {
-      const res = await fetch('/api/messages', {
+      // Appeler la nouvelle API /api/chat qui gère tout
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           conversationId: currentConversation,
-          role: 'user',
-          content: userMessage,
+          message: userMessage,
         }),
       });
 
       const data = await res.json();
-      if (res.ok) {
-        setMessages([...messages, data.message]);
 
-        if (messages.length === 0) {
-          await updateConversationTitle(currentConversation, userMessage);
-        }
-
-        // Simuler réponse assistant
-        setTimeout(async () => {
-          const resAssistant = await fetch('/api/messages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              conversationId: currentConversation,
-              role: 'assistant',
-              content:
-                'Je suis ravi de vous aider ! 📚✨ Cette réponse est temporaire. Bientôt, je pourrai vous aider avec vos devoirs, répondre à vos questions de cours et vous guider dans votre apprentissage !',
-            }),
-          });
-
-          const dataAssistant = await resAssistant.json();
-          if (resAssistant.ok) {
-            setMessages((prev) => [...prev, dataAssistant.message]);
-          } 
-          setSending(false);
-        }, 1000);
+      if (!res.ok) {
+        throw new Error(data.error || 'Erreur lors de l\'envoi du message');
       }
-    } catch (error) {
+
+      // Ajouter les deux messages (user + assistant) à l'état
+      setMessages([...messages, data.userMessage, data.assistantMessage]);
+
+      // Recharger les conversations pour mettre à jour le titre
+      loadConversations();
+    } catch (error: any) {
       console.error('Erreur:', error);
+      setError(error.message || 'Une erreur est survenue');
+    } finally {
       setSending(false);
     }
   };
@@ -229,6 +199,18 @@ export default function ChatPage() {
 
   return (
     <Box sx={{ display: 'flex', height: '100vh', bgcolor: '#FAFAFA' }}>
+      {/* Snackbar pour les erreurs */}
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={() => setError(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
+
       {/* AppBar mobile */}
       <AppBar
         position="fixed"

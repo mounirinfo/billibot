@@ -164,11 +164,19 @@ export default function LoginPage() {
               }}
             />
 
+            {/* Lien "Mot de passe oublié" - MODIFIÉ */}
             <Box sx={{ textAlign: 'right', mb: 3 }}>
               <Link
-                href="#"
+                href="/forgot-password"
                 underline="hover"
-                sx={{ fontSize: '0.875rem', color: 'text.secondary' }}
+                sx={{
+                  fontSize: '0.875rem',
+                  color: 'primary.main',
+                  fontWeight: 500,
+                  '&:hover': {
+                    color: 'primary.dark',
+                  },
+                }}
               >
                 Mot de passe oublié ?
               </Link>

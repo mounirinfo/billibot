@@ -83,6 +83,7 @@ export default function SignupPage() {
 
   const loadSchools = async () => {
     try {
+      console.log("11111111111")
       const res = await fetch('/api/schools');
       if (res.ok) {
         const data = await res.json();
@@ -464,7 +465,7 @@ export default function SignupPage() {
               Créer un compte
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Rejoignez EduBot pour commencer votre apprentissage
+              Rejoignez BilliBot pour commencer votre apprentissage
             </Typography>
           </Box>
 
