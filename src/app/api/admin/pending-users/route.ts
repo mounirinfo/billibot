@@ -5,7 +5,6 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Vérifier l'authentification
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
@@ -15,7 +14,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Récupérer le profil de l'admin
     const { data: adminProfile, error: adminError } = await supabase
       .from('profiles')
       .select('role, school_id')
@@ -29,7 +27,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Vérifier les permissions
     if (adminProfile.role !== 'super_admin' && adminProfile.role !== 'school_admin') {
       return NextResponse.json(
         { error: 'Accès refusé' },
@@ -46,7 +43,6 @@ export async function GET(request: NextRequest) {
       .eq('account_status', 'pending')
       .order('created_at', { ascending: false });
 
-    // Si admin d'école, filtrer par son école uniquement
     if (adminProfile.role === 'school_admin') {
       query = query.eq('school_id', adminProfile.school_id);
     }

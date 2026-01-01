@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('role, full_name, email, avatar_url')
+      .select('id, role, full_name, email, avatar_url, phone, bio, grade_level, subjects, account_status, created_at')
       .eq('id', user.id)
       .single();
 
@@ -29,8 +29,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // ✅ Response complète avec le rôle ET le statut
     return NextResponse.json({
-      profile,
+      success: true,
+      profile: {
+        id: profile.id,
+        email: profile.email,
+        full_name: profile.full_name,
+        role: profile.role,                    
+        account_status: profile.account_status, 
+        avatar_url: profile.avatar_url,
+        phone: profile.phone,
+        bio: profile.bio,
+        grade_level: profile.grade_level,
+        subjects: profile.subjects,
+        created_at: profile.created_at,
+      },
     });
   } catch (error) {
     console.error('Erreur:', error);

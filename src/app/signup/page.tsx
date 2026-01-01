@@ -21,6 +21,7 @@ import {
   Stepper,
   Step,
   StepLabel,
+  FormHelperText,
 } from '@mui/material';
 import {
   Visibility,
@@ -29,7 +30,6 @@ import {
   Lock,
   Person,
   SmartToy,
-  School,
   Phone,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
@@ -41,9 +41,8 @@ interface School {
   school_group_id?: string;
 }
 
-interface SchoolGroup {
-  id: string;
-  name: string;
+interface FieldErrors {
+  [key: string]: string | null;
 }
 
 export default function SignupPage() {
@@ -52,38 +51,30 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [schools, setSchools] = useState<School[]>([]);
-  const [schoolGroups, setSchoolGroups] = useState<SchoolGroup[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const [formData, setFormData] = useState({
-    // Étape 1 : Informations de base
     fullName: '',
     email: '',
     password: '',
     confirmPassword: '',
     phone: '',
-    
-    // Étape 2 : Profil
     role: '',
     schoolId: '',
-    schoolGroupId: '',
-    gradeLevel: '',
     subjects: [] as string[],
   });
 
   const steps = ['Informations de base', 'Type de profil', 'Confirmation'];
 
-  // Charger les écoles et groupes scolaires
   useEffect(() => {
     loadSchools();
-    loadSchoolGroups();
   }, []);
 
   const loadSchools = async () => {
     try {
-      console.log("11111111111")
       const res = await fetch('/api/schools');
       if (res.ok) {
         const data = await res.json();
@@ -94,47 +85,83 @@ export default function SignupPage() {
     }
   };
 
-  const loadSchoolGroups = async () => {
-    try {
-      const res = await fetch('/api/school-groups');
-      if (res.ok) {
-        const data = await res.json();
-        setSchoolGroups(data.schoolGroups || []);
-      }
-    } catch (error) {
-      console.error('Erreur chargement groupes:', error);
+  const handleChange = (field: string) => (e: any) => {
+    setFormData({ ...formData, [field]: e.target.value });
+    if (fieldErrors[field]) {
+      setFieldErrors({ ...fieldErrors, [field]: null });
     }
   };
 
-  const handleChange = (field: string) => (e: any) => {
-    setFormData({ ...formData, [field]: e.target.value });
+  // ✅ Fonction pour vérifier si le rôle nécessite un établissement
+  const roleNeedsSchool = (role: string) => {
+    return role === 'teacher' || role === 'school_admin';
+  };
+
+  const clearErrors = () => {
+    setError('');
+    setFieldErrors({});
   };
 
   const validateStep = (step: number): boolean => {
-    setError('');
+    clearErrors();
 
     if (step === 0) {
-      if (!formData.fullName || !formData.email || !formData.password) {
-        setError('Veuillez remplir tous les champs obligatoires');
-        return false;
+      const errors: FieldErrors = {};
+
+      if (!formData.fullName.trim()) {
+        errors.fullName = 'Le nom complet est requis';
       }
-      if (formData.password !== formData.confirmPassword) {
-        setError('Les mots de passe ne correspondent pas');
-        return false;
+
+      if (!formData.email.trim()) {
+        errors.email = 'L\'email est requis';
+      } else {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) {
+          errors.email = 'Format d\'email invalide';
+        }
       }
-      if (formData.password.length < 6) {
-        setError('Le mot de passe doit contenir au moins 6 caractères');
+
+      if (formData.phone && formData.phone.trim()) {
+        const phoneRegex = /^[0-9]{10}$/;
+        if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
+          errors.phone = 'Le numéro de téléphone doit contenir 10 chiffres';
+        }
+      }
+
+      if (!formData.password) {
+        errors.password = 'Le mot de passe est requis';
+      } else if (formData.password.length < 6) {
+        errors.password = 'Le mot de passe doit contenir au moins 6 caractères';
+      }
+
+      if (!formData.confirmPassword) {
+        errors.confirmPassword = 'Veuillez confirmer votre mot de passe';
+      } else if (formData.password !== formData.confirmPassword) {
+        errors.confirmPassword = 'Les mots de passe ne correspondent pas';
+      }
+
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        setError('Veuillez corriger les erreurs dans le formulaire');
         return false;
       }
     }
 
     if (step === 1) {
+      const errors: FieldErrors = {};
+
       if (!formData.role) {
-        setError('Veuillez sélectionner un type de profil');
-        return false;
+        errors.role = 'Veuillez sélectionner un type de profil';
       }
-      if (!formData.schoolId && formData.role !== 'super_admin') {
-        setError('Veuillez sélectionner un établissement');
+
+      // ✅ Établissement requis uniquement pour enseignant et admin
+      if (roleNeedsSchool(formData.role) && !formData.schoolId) {
+        errors.schoolId = 'Veuillez sélectionner un établissement';
+      }
+
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        setError('Veuillez corriger les erreurs dans le formulaire');
         return false;
       }
     }
@@ -150,7 +177,7 @@ export default function SignupPage() {
 
   const handleBack = () => {
     setActiveStep((prev) => prev - 1);
-    setError('');
+    clearErrors();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -159,8 +186,7 @@ export default function SignupPage() {
     if (!validateStep(activeStep)) return;
 
     setLoading(true);
-    setError('');
-    setSuccess('');
+    clearErrors();
 
     try {
       const response = await fetch('/api/auth/signup', {
@@ -169,30 +195,51 @@ export default function SignupPage() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          fullName: formData.fullName,
-          phone: formData.phone,
+          full_name: formData.fullName,
+          phone: formData.phone || null,
           role: formData.role,
-          schoolId: formData.schoolId,
-          schoolGroupId: formData.schoolGroupId,
-          gradeLevel: formData.gradeLevel,
-          subjects: formData.subjects,
+          school_id: roleNeedsSchool(formData.role) ? formData.schoolId : null,
+          subjects: formData.subjects.length > 0 ? formData.subjects : null,
         }),
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
+      if (!data.success) {
         setError(data.error || 'Erreur lors de l\'inscription');
+        
+        if (data.details) {
+          const errors: FieldErrors = {};
+          Object.entries(data.details).forEach(([key, value]) => {
+            if (value) {
+              const fieldMap: { [key: string]: string } = {
+                full_name: 'fullName',
+                school_id: 'schoolId',
+              };
+              const fieldKey = fieldMap[key] || key;
+              errors[fieldKey] = value as string;
+            }
+          });
+          setFieldErrors(errors);
+
+          if (errors.email || errors.password || errors.fullName || errors.phone) {
+            setActiveStep(0);
+          } else if (errors.role || errors.schoolId) {
+            setActiveStep(1);
+          }
+        }
+        
         setLoading(false);
         return;
       }
 
-      setSuccess('Compte créé avec succès ! Votre compte est en attente de validation par un administrateur.');
+      setSuccess(data.message || 'Compte créé avec succès ! Votre compte est en attente de validation.');
       setTimeout(() => {
-        router.push('/pending');
+        router.push(data.redirectTo || '/pending');
       }, 2000);
     } catch (err) {
-      setError('Une erreur est survenue. Veuillez réessayer.');
+      console.error('Erreur:', err);
+      setError('Erreur de connexion au serveur. Veuillez réessayer.');
       setLoading(false);
     }
   };
@@ -209,6 +256,8 @@ export default function SignupPage() {
               onChange={handleChange('fullName')}
               required
               disabled={loading}
+              error={!!fieldErrors.fullName}
+              helperText={fieldErrors.fullName}
               sx={{ mb: 2.5 }}
               InputProps={{
                 startAdornment: (
@@ -227,6 +276,8 @@ export default function SignupPage() {
               onChange={handleChange('email')}
               required
               disabled={loading}
+              error={!!fieldErrors.email}
+              helperText={fieldErrors.email}
               sx={{ mb: 2.5 }}
               InputProps={{
                 startAdornment: (
@@ -243,6 +294,8 @@ export default function SignupPage() {
               value={formData.phone}
               onChange={handleChange('phone')}
               disabled={loading}
+              error={!!fieldErrors.phone}
+              helperText={fieldErrors.phone || '10 chiffres'}
               sx={{ mb: 2.5 }}
               InputProps={{
                 startAdornment: (
@@ -261,6 +314,8 @@ export default function SignupPage() {
               onChange={handleChange('password')}
               required
               disabled={loading}
+              error={!!fieldErrors.password}
+              helperText={fieldErrors.password || 'Au moins 6 caractères'}
               sx={{ mb: 2.5 }}
               InputProps={{
                 startAdornment: (
@@ -290,6 +345,8 @@ export default function SignupPage() {
               onChange={handleChange('confirmPassword')}
               required
               disabled={loading}
+              error={!!fieldErrors.confirmPassword}
+              helperText={fieldErrors.confirmPassword}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -315,7 +372,7 @@ export default function SignupPage() {
       case 1:
         return (
           <>
-            <FormControl fullWidth sx={{ mb: 2.5 }}>
+            <FormControl fullWidth sx={{ mb: 2.5 }} error={!!fieldErrors.role}>
               <InputLabel>Type de profil *</InputLabel>
               <Select
                 value={formData.role}
@@ -324,40 +381,39 @@ export default function SignupPage() {
                 disabled={loading}
                 label="Type de profil *"
               >
-                <MenuItem value="student">Élève</MenuItem>
+                <MenuItem value="student">Étudiant</MenuItem>
+                <MenuItem value="candidat">Candidat</MenuItem>
                 <MenuItem value="parent">Parent</MenuItem>
                 <MenuItem value="teacher">Enseignant</MenuItem>
                 <MenuItem value="school_admin">Administrateur d'établissement</MenuItem>
               </Select>
+              {fieldErrors.role && <FormHelperText>{fieldErrors.role}</FormHelperText>}
             </FormControl>
 
-            <FormControl fullWidth sx={{ mb: 2.5 }}>
-              <InputLabel>Établissement *</InputLabel>
-              <Select
-                value={formData.schoolId}
-                onChange={handleChange('schoolId')}
-                required
-                disabled={loading}
-                label="Établissement *"
-              >
-                {schools.map((school) => (
-                  <MenuItem key={school.id} value={school.id}>
-                    {school.name} - {school.type}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            {formData.role === 'student' && (
-              <TextField
-                fullWidth
-                label="Niveau scolaire"
-                placeholder="Ex: 6ème, Terminale S, Licence 1..."
-                value={formData.gradeLevel}
-                onChange={handleChange('gradeLevel')}
-                disabled={loading}
-                sx={{ mb: 2.5 }}
-              />
+            {/* ✅ Établissement uniquement pour enseignant et admin */}
+            {roleNeedsSchool(formData.role) && (
+              <FormControl fullWidth sx={{ mb: 2.5 }} error={!!fieldErrors.schoolId}>
+                <InputLabel>Établissement *</InputLabel>
+                <Select
+                  value={formData.schoolId}
+                  onChange={handleChange('schoolId')}
+                  required
+                  disabled={loading || schools.length === 0}
+                  label="Établissement *"
+                >
+                  {schools.length === 0 && (
+                    <MenuItem value="" disabled>
+                      Chargement des établissements...
+                    </MenuItem>
+                  )}
+                  {schools.map((school) => (
+                    <MenuItem key={school.id} value={school.id}>
+                      {school.name} - {school.type}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {fieldErrors.schoolId && <FormHelperText>{fieldErrors.schoolId}</FormHelperText>}
+              </FormControl>
             )}
 
             {formData.role === 'teacher' && (
@@ -367,11 +423,12 @@ export default function SignupPage() {
                 placeholder="Ex: Mathématiques, Physique..."
                 value={formData.subjects.join(', ')}
                 onChange={(e) => {
-                  const subjects = e.target.value.split(',').map(s => s.trim());
+                  const subjects = e.target.value.split(',').map(s => s.trim()).filter(s => s);
                   setFormData({ ...formData, subjects });
                 }}
                 disabled={loading}
-                helperText="Séparez les matières par des virgules"
+                error={!!fieldErrors.subjects}
+                helperText={fieldErrors.subjects || "Séparez les matières par des virgules"}
               />
             )}
           </>
@@ -380,40 +437,43 @@ export default function SignupPage() {
       case 2:
         return (
           <Box>
-            <Typography variant="h6" gutterBottom color="primary">
-              Récapitulatif
+            <Typography variant="h6" gutterBottom color="primary" fontWeight={700}>
+              📋 Récapitulatif
             </Typography>
-            <Box sx={{ bgcolor: '#f5f5f5', p: 2, borderRadius: 2 }}>
-              <Typography variant="body2" sx={{ mb: 1 }}>
+            <Box sx={{ bgcolor: '#F5F7FA', p: 3, borderRadius: 2, border: '2px solid #E0F2F1' }}>
+              <Typography variant="body2" sx={{ mb: 1.5 }}>
                 <strong>Nom :</strong> {formData.fullName}
               </Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}>
+              <Typography variant="body2" sx={{ mb: 1.5 }}>
                 <strong>Email :</strong> {formData.email}
               </Typography>
               {formData.phone && (
-                <Typography variant="body2" sx={{ mb: 1 }}>
+                <Typography variant="body2" sx={{ mb: 1.5 }}>
                   <strong>Téléphone :</strong> {formData.phone}
                 </Typography>
               )}
-              <Typography variant="body2" sx={{ mb: 1 }}>
+              <Typography variant="body2" sx={{ mb: 1.5 }}>
                 <strong>Type de profil :</strong>{' '}
-                {formData.role === 'student' && 'Élève'}
+                {formData.role === 'student' && 'Étudiant'}
+                {formData.role === 'candidat' && 'Candidat'}
                 {formData.role === 'parent' && 'Parent'}
                 {formData.role === 'teacher' && 'Enseignant'}
                 {formData.role === 'school_admin' && 'Admin d\'établissement'}
               </Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}>
-                <strong>École :</strong>{' '}
-                {schools.find(s => s.id === formData.schoolId)?.name || '-'}
-              </Typography>
-              {formData.gradeLevel && (
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Niveau :</strong> {formData.gradeLevel}
+              {roleNeedsSchool(formData.role) && (
+                <Typography variant="body2" sx={{ mb: 1.5 }}>
+                  <strong>École :</strong>{' '}
+                  {schools.find(s => s.id === formData.schoolId)?.name || '-'}
+                </Typography>
+              )}
+              {formData.subjects.length > 0 && (
+                <Typography variant="body2">
+                  <strong>Matières :</strong> {formData.subjects.join(', ')}
                 </Typography>
               )}
             </Box>
-            <Alert severity="info" sx={{ mt: 2 }}>
-              Votre compte sera en attente de validation par un administrateur.
+            <Alert severity="info" sx={{ mt: 3 }}>
+              ⏳ Votre compte sera en attente de validation par un administrateur. Vous recevrez un email une fois validé.
             </Alert>
           </Box>
         );
@@ -442,7 +502,6 @@ export default function SignupPage() {
         }}
       >
         <CardContent sx={{ p: 4 }}>
-          {/* Logo et titre */}
           <Box
             sx={{
               display: 'flex',
@@ -457,6 +516,7 @@ export default function SignupPage() {
                 height: 80,
                 bgcolor: '#FFD93D',
                 mb: 2,
+                boxShadow: 3,
               }}
             >
               <SmartToy sx={{ fontSize: 48, color: '#2D9B94' }} />
@@ -469,7 +529,6 @@ export default function SignupPage() {
             </Typography>
           </Box>
 
-          {/* Stepper */}
           <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
             {steps.map((label) => (
               <Step key={label}>
@@ -478,9 +537,8 @@ export default function SignupPage() {
             ))}
           </Stepper>
 
-          {/* Messages */}
           {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
+            <Alert severity="error" sx={{ mb: 3 }} onClose={() => clearErrors()}>
               {error}
             </Alert>
           )}
@@ -491,17 +549,16 @@ export default function SignupPage() {
             </Alert>
           )}
 
-          {/* Formulaire */}
           <form onSubmit={handleSubmit}>
             {renderStepContent(activeStep)}
 
-            {/* Boutons de navigation */}
             <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
               {activeStep > 0 && (
                 <Button
                   onClick={handleBack}
                   disabled={loading}
                   sx={{ flex: 1 }}
+                  variant="outlined"
                 >
                   Retour
                 </Button>

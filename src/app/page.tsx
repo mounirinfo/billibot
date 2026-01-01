@@ -1,60 +1,33 @@
 'use client';
-import { Box, CircularProgress } from '@mui/material';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { useEffect } from 'react';
 
+import { useEffect } from 'react';
+import { Box, CircularProgress, Typography } from '@mui/material';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
-   const router = useRouter();
+  const router = useRouter();
+
   useEffect(() => {
-      const fetchProfile = async () => {
-        const supabase = createClient();
-        
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          router.push('/login');
-          return;
-        }
-  
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('account_status, rejection_reason, email')
-          .eq('id', user.id)
-          .single();
-  
-        if (!profile) {
-          router.push('/login');
-          return;
-        }
-  
-        // Si le compte n'est pas rejeté, rediriger
-        if (profile.account_status !== 'rejected') {
-          if (profile.account_status === 'approved') {
-            router.push('/chat');
-          } else {
-            router.push('/pending');
-          }
-          return;
-        }
-  
-      };
-  
-      fetchProfile();
-    }, [router]);
+    // Redirection immédiate vers /login
+    router.push('/login');
+  }, [router]);
 
   return (
     <Box
       sx={{
         minHeight: '100vh',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         background: 'linear-gradient(135deg, #2D9B94 0%, #1F7872 100%)',
+        gap: 2,
       }}
     >
-      <CircularProgress sx={{ color: 'white' }} />
+      <CircularProgress sx={{ color: 'white' }} size={60} />
+      <Typography variant="h6" sx={{ color: 'white', fontWeight: 600 }}>
+        Redirection...
+      </Typography>
     </Box>
   );
 }
