@@ -35,7 +35,7 @@ import {
   SupervisorAccount,
   Groups,
 } from '@mui/icons-material';
-import { User } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
 
 interface Conversation {
   id: string;

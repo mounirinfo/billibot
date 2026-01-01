@@ -17,10 +17,7 @@ import {
 import { Menu as MenuIcon, SmartToy } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import Sidebar from '@/components/chat/Sidebar';
-import MessageList from '@/components/chat/MessageList';
-import MessageInput from '@/components/chat/MessageInput';
-import EmptyState from '@/components/chat/EmptyState';
+import { EmptyState, MessageInput, MessageList, Sidebar } from '@billibot/ui';
 
 const drawerWidth = 320;
 
