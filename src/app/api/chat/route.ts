@@ -1,17 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: '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',
-  baseURL: 'https://openrouter.ai/api/v1',
-});
+const MISTRAL_API_KEY = 'c2VrbySfX85JQjAHHnp863aVqeywPcaU';
+const MISTRAL_API_URL = 'https://api.mistral.ai/v1/chat/completions';
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    
-    // Vérifier l'authentification
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
@@ -26,7 +22,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Sauvegarder le message utilisateur
     const { data: userMessage, error: userError } = await supabase
       .from('messages')
       .insert({
@@ -42,7 +37,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erreur base de données' }, { status: 500 });
     }
 
-    // 2. Récupérer l'historique de la conversation (derniers 10 messages)
     const { data: history } = await supabase
       .from('messages')
       .select('role, content')
@@ -50,7 +44,6 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: true })
       .limit(10);
 
-    // 3. Préparer les messages pour OpenRouter
     const messages = [
       {
         role: 'system',
@@ -62,22 +55,34 @@ export async function POST(request: NextRequest) {
       })),
     ];
 
-    // 4. Appeler OpenRouter avec streaming
-    const completion = await openai.chat.completions.create({
-      model: 'openai/gpt-3.5-turbo', 
-      messages: messages as any,
-      stream: false, 
-      temperature: 0.7,
-      max_tokens: 1000,
+    const mistralResponse = await fetch(MISTRAL_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'mistral-small-latest',
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 1000,
+        stream: false,
+      }),
     });
 
-    const assistantMessage = completion.choices[0].message.content;
+    if (!mistralResponse.ok) {
+      const errorData = await mistralResponse.json();
+      console.error('Erreur Mistral API:', errorData);
+      throw new Error(`Erreur Mistral: ${mistralResponse.statusText}`);
+    }
+
+    const mistralData = await mistralResponse.json();
+    const assistantMessage = mistralData.choices[0]?.message?.content;
 
     if (!assistantMessage) {
       return NextResponse.json({ error: 'Pas de réponse de l\'IA' }, { status: 500 });
     }
 
-    // 5. Sauvegarder la réponse de l'assistant
     const { data: savedAssistantMessage, error: assistantError } = await supabase
       .from('messages')
       .insert({
@@ -93,7 +98,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erreur base de données' }, { status: 500 });
     }
 
-    // 6. Mettre à jour le titre de la conversation (premier message)
     if (history && history.length <= 2) {
       const title = message.slice(0, 50) + (message.length > 50 ? '...' : '');
       await supabase
@@ -101,7 +105,6 @@ export async function POST(request: NextRequest) {
         .update({ title, updated_at: new Date().toISOString() })
         .eq('id', conversationId);
     } else {
-      // Juste mettre à jour updated_at
       await supabase
         .from('conversations')
         .update({ updated_at: new Date().toISOString() })

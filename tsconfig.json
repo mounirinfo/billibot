@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@billibot/ui": ["./packages/ui/src/index.ts"],
+      "@billibot/ui/*": ["./packages/ui/src/*"]
     }
   },
   "include": [

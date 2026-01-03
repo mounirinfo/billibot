@@ -57,3 +57,6 @@ SELECT 'Trigger supprimé avec succès !' as status;
 
 -- On gérera maintenant la création du profil directement dans l'API signup
 -- ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;  
+
+-- Ajouter le rôle 'candidat' à l'enum user_role
+ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'candidat';

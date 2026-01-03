@@ -7,17 +7,15 @@ import type { CookieOptions } from '@supabase/ssr';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
-    // ✅ Log pour debug
+
     console.log('📥 Body reçu:', body);
 
     const { email, password } = body;
 
-    // ✅ Validation
     if (!email || !password) {
       console.log('❌ Champs manquants:', { email: !!email, password: !!password });
       return NextResponse.json(
-        { 
+        {
           success: false,
           error: 'Email et mot de passe requis',
           details: {
@@ -68,7 +66,7 @@ export async function POST(request: Request) {
 
       if (error.message.includes('Invalid login credentials')) {
         return NextResponse.json(
-          { 
+          {
             success: false,
             error: 'Email ou mot de passe incorrect',
             details: {
@@ -81,7 +79,7 @@ export async function POST(request: Request) {
 
       if (error.message.includes('Email not confirmed')) {
         return NextResponse.json(
-          { 
+          {
             success: false,
             error: 'Email non confirmé',
             details: {
@@ -93,7 +91,7 @@ export async function POST(request: Request) {
       }
 
       return NextResponse.json(
-        { 
+        {
           success: false,
           error: error.message,
           details: {
@@ -106,7 +104,7 @@ export async function POST(request: Request) {
 
     if (!data.session || !data.user) {
       return NextResponse.json(
-        { 
+        {
           success: false,
           error: 'Session non créée',
           details: {
@@ -127,7 +125,7 @@ export async function POST(request: Request) {
     if (profileError) {
       console.error('❌ Erreur profil:', profileError);
       return NextResponse.json(
-        { 
+        {
           success: false,
           error: 'Erreur lors de la récupération du profil',
           details: {
@@ -150,19 +148,15 @@ export async function POST(request: Request) {
         redirectTo = '/superadmin/pending-users';
       } else if (profile.role === 'admin') {
         redirectTo = '/admin/dashboard';
+      } else if (profile.role === 'student') {
+        redirectTo = '/etudiant';
+      } else if (profile.role === 'candidat') {
+        redirectTo = '/candidat';
       } else {
         redirectTo = '/chat';
       }
     }
 
-    console.log('✅ Connexion réussie:', { 
-      user_id: data.user.id, 
-      role: profile.role, 
-      status: profile.account_status,
-      redirectTo 
-    });
-
-    // Response sécurisée
     return NextResponse.json(
       {
         success: true,
@@ -181,12 +175,11 @@ export async function POST(request: Request) {
       { status: 200 }
     );
   } catch (error: any) {
-    console.error('❌ Erreur lors de la connexion:', error);
-    
-    // Erreur de parsing JSON
+    console.error('Login error:', error);
+
     if (error instanceof SyntaxError) {
       return NextResponse.json(
-        { 
+        {
           success: false,
           error: 'Données invalides',
           details: {
@@ -198,7 +191,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Une erreur est survenue lors de la connexion',
         details: {

@@ -336,7 +336,7 @@ export default function CandidatDashboard() {
           alignItems: 'center',
           background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 50%, ${colors.secondary} 100%)`,
           overflow: 'hidden',
-          pt: 8,
+          pt: 16,
           pb: 10
         }}
       >
