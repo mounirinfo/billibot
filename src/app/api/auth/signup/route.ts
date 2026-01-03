@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     }
 
     // ✅ Validation du rôle
-    const validRoles = ['student', 'teacher', 'parent', 'school_admin', 'admin'];
+    const validRoles = ['student', 'teacher', 'parent', 'school_admin', 'admin','candidat'];
     if (!validRoles.includes(role)) {
       return NextResponse.json(
         { 
