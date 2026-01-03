@@ -37,7 +37,7 @@ import {
     Rocket,
     Stars
 } from '@mui/icons-material';
-import { motion, AnimatePresence, useMotionValue, useTransform, useSpring, useAnimation } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { etablissements, niveaux, specialites, programmes } from '../../data/mock-programmes';
 
 const iconMap: any = {
@@ -61,31 +61,47 @@ const MotionCard = motion.create(Card);
 const MotionTypography = motion.create(Typography);
 
 function ParticlesBackground() {
+    const [particles, setParticles] = useState<any[]>([]);
+
+    useEffect(() => {
+        const newParticles = [...Array(30)].map((_, i) => ({
+            id: i,
+            width: Math.random() * 8 + 4,
+            height: Math.random() * 8 + 4,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animateX: [0, Math.random() * 20 - 10, 0],
+            duration: Math.random() * 5 + 3,
+            delay: Math.random() * 2
+        }));
+        setParticles(newParticles);
+    }, []);
+
     return (
         <Box sx={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-            {[...Array(30)].map((_, i) => (
+            {particles.map((p) => (
                 <motion.div
-                    key={i}
+                    key={p.id}
                     style={{
                         position: 'absolute',
-                        width: Math.random() * 8 + 4,
-                        height: Math.random() * 8 + 4,
+                        width: p.width,
+                        height: p.height,
                         borderRadius: '50%',
                         background: `linear-gradient(135deg, ${colors.primary}40, ${colors.secondary}40)`,
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
+                        left: p.left,
+                        top: p.top,
                     }}
                     animate={{
                         y: [0, -30, 0],
-                        x: [0, Math.random() * 20 - 10, 0],
+                        x: p.animateX,
                         opacity: [0.3, 0.8, 0.3],
                         scale: [1, 1.3, 1]
                     }}
                     transition={{
-                        duration: Math.random() * 5 + 3,
+                        duration: p.duration,
                         repeat: Infinity,
                         ease: "easeInOut",
-                        delay: Math.random() * 2
+                        delay: p.delay
                     }}
                 />
             ))}

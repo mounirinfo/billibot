@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
-const MISTRAL_API_KEY = 'c2VrbySfX85JQjAHHnp863aVqeywPcaU';
+const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
 const MISTRAL_API_URL = 'https://api.mistral.ai/v1/chat/completions';
 
 export async function POST(request: NextRequest) {

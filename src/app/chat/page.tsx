@@ -17,7 +17,10 @@ import {
 import { Menu as MenuIcon, SmartToy } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { EmptyState, MessageInput, MessageList, Sidebar } from '@billibot/ui';
+import EmptyState from '@/components/chat/EmptyState';
+import MessageInput from '@/components/chat/MessageInput';
+import MessageList from '@/components/chat/MessageList';
+import Sidebar from '@/components/chat/Sidebar';
 
 const drawerWidth = 320;
 
@@ -249,7 +252,7 @@ export default function ChatPage() {
             onCreateConversation={createConversation}
             onSelectConversation={handleSelectConversation}
             onDeleteConversation={deleteConversation}
-            // ✅ Retirer onSignOut - la Sidebar gère maintenant le logout directement
+          // ✅ Retirer onSignOut - la Sidebar gère maintenant le logout directement
           />
         </Drawer>
 
