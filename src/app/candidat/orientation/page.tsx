@@ -13,11 +13,13 @@ import {
   CardContent,
   LinearProgress,
   Grid,
-  Chip
+  Chip,
+  CircularProgress
 } from '@mui/material';
 import { ArrowBack, ArrowForward, CheckCircle, EmojiObjects, Refresh } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { useOrientationStore } from '@/store/useOrientationStore';
 
 const MotionBox = motion.create(Box);
 const MotionCard = motion.create(Card);
@@ -26,83 +28,153 @@ const MotionButton = motion.create(Button);
 const colors = {
   primary: '#2D9B94',
   secondary: '#FFD93D',
-  primaryDark: '#1F7A72'
+  primaryDark: '#1F7A72',
+  blue: '#4A90E2',
+  pink: '#FF6B9D'
 };
 
-const steps = ['Ce que tu aimes', 'Ton style', 'Ton niveau'];
+const steps = ['Accueil', 'Ce que tu aimes', 'Ton style', 'Contraintes', 'Niveau', 'Non-négociables', 'Ajustement', 'Résultats'];
 
 const questionData = {
+  step0: {
+    title: '👋 Bienvenue sur Orientation Express+',
+    subtitle: 'Trouvons ensemble ta voie idéale en moins de 2 minutes.',
+    content: 'Prêt(e) à découvrir les 3 pistes qui te correspondent vraiment ? On va passer par 7 petites étapes rapides.'
+  },
   step1: {
-    title: '1️⃣ Ce que tu aimes le PLUS faire',
-    subtitle: 'Tu peux choisir jusqu\'à 2 réponses',
+    title: '1️⃣ Ce que tu aimes faire',
+    subtitle: 'Quand tu t’éclates dans un projet, tu fais quoi exactement ?',
+    isOpen: true,
+    placeholder: 'Ex: J\'adore organiser des événements, convaincre des gens...',
+    maxChars: 120,
     options: [
-      { id: 'A', label: 'Vendre, conseiller, convaincre', emoji: '💼' },
-      { id: 'B', label: 'Communiquer, créer, réseaux sociaux', emoji: '📱' },
-      { id: 'C', label: 'Organiser, gérer', emoji: '📊' },
-      { id: 'D', label: 'Langues, international', emoji: '🌍' },
-      { id: 'E', label: 'Analyser, droit, économie', emoji: '⚖️' },
-      { id: 'F', label: 'Je ne sais pas trop', emoji: '🤔' }
+      { id: 'convaincre', label: 'Convaincre / Vendre', emoji: '💼' },
+      { id: 'creer', label: 'Créer / Imaginer', emoji: '🎨' },
+      { id: 'organiser', label: 'Organiser / Gérer', emoji: '📊' },
+      { id: 'international', label: 'International / Langues', emoji: '🌍' },
+      { id: 'analyser', label: 'Analyser / Comprendre', emoji: '🔍' }
     ]
   },
   step2: {
     title: '2️⃣ Ton style de travail',
-    subtitle: 'Choisis une réponse',
-    options: [
-      { id: 'A', label: 'Terrain, action, contact', emoji: '🏃' },
-      { id: 'B', label: 'Bureau, stratégie, analyse', emoji: '💻' },
-      { id: 'C', label: 'Créatif, projets variés', emoji: '🎨' },
-      { id: 'D', label: 'Équipe, collaboration', emoji: '👥' },
-      { id: 'E', label: 'Autonomie, indépendance', emoji: '🚀' }
+    subtitle: 'Ce qui compte le plus pour toi (0-3)',
+    sliders: [
+      { id: 'crea', label: 'Créativité', emoji: '🎨' },
+      { id: 'social', label: 'Relationnel', emoji: '👥' },
+      { id: 'data', label: 'Données / Analyse', emoji: '📊' },
+      { id: 'intl', label: 'International', emoji: '🌍' }
     ]
   },
   step3: {
-    title: '3️⃣ Ton niveau actuel',
-    subtitle: 'Choisis une réponse',
+    title: '3️⃣ Tes contraintes & envies',
+    subtitle: 'Choisis jusqu\'à 3 options',
     options: [
-      { id: 'A', label: 'Terminale (bac en cours)', emoji: '📚' },
-      { id: 'B', label: 'Bac obtenu', emoji: '🎓' },
-      { id: 'C', label: 'Réorientation (bac+1/2)', emoji: '🔄' },
-      { id: 'D', label: 'Autre situation', emoji: '✨' }
+      { id: 'apprenticeship', label: 'Alternance souhaitée', emoji: '🤝' },
+      { id: 'proximity', label: 'Proximité géographique', emoji: '📍' },
+      { id: 'practice', label: 'Beaucoup de pratique', emoji: '🛠️' },
+      { id: 'hybrid', label: 'Mode Hybride OK', emoji: '🏠' },
+      { id: 'budget', label: 'Budget à surveiller', emoji: '💰' }
+    ]
+  },
+  step4: {
+    title: '4️⃣ Ton niveau & contexte',
+    subtitle: 'Où en es-tu aujourd\'hui ?',
+    options: [
+      { id: 'terminale', label: 'Terminale (Bac en cours)', emoji: '📚' },
+      { id: 'bac', label: 'Bac obtenu', emoji: '🎓' },
+      { id: 'reorient', label: 'Réorientation', emoji: '🔄' },
+      { id: 'other', label: 'Autre situation', emoji: '✨' }
+    ]
+  },
+  step5: {
+    title: '5️⃣ Tes non-négociables',
+    subtitle: 'Ce qui est impératif pour toi (max 2)',
+    options: [
+      { id: 'alt_req', label: 'Alternance obligatoire', emoji: '⚠️' },
+      { id: 'no_maths', label: 'Peu de maths', emoji: '📉' },
+      { id: 'intl_req', label: 'International indispensable', emoji: '🌐' },
+      { id: 'short_route', label: 'Cursus court (Bac+2)', emoji: '⏱️' }
+    ]
+  },
+  step6: {
+    title: '6️⃣ Ajustement final',
+    subtitle: 'En fonction de tes réponses, on a déjà une idée. Tu veux booster un critère ?',
+    options: [
+      { id: 'boost_crea', label: 'Booster Créativité', emoji: '🎨' },
+      { id: 'boost_intl', label: 'Booster International', emoji: '🌍' },
+      { id: 'boost_social', label: 'Booster Relationnel', emoji: '👥' },
+      { id: 'all_good', label: 'Tout me semble parfait', emoji: '✅' }
     ]
   }
 };
 
 const formations = [
-  { name: 'BTS MCO', fullName: 'Management Commercial Opérationnel', emoji: '🏪', description: 'Gestion d\'unité commerciale, relation client, management', profiles: ['A', 'C'], color: '#2D9B94' },
-  { name: 'BTS NDRC', fullName: 'Négociation et Digitalisation', emoji: '💼', description: 'Vente, négociation, stratégie commerciale digitale', profiles: ['A', 'B'], color: '#4A90E2' },
-  { name: 'BTS COM', fullName: 'Communication', emoji: '📱', description: 'Communication digitale, événementiel, réseaux sociaux', profiles: ['B'], color: '#FF6B9D' },
-  { name: 'BTS SAM', fullName: 'Support à l\'Action Managériale', emoji: '📊', description: 'Assistance de direction, gestion de projets', profiles: ['C', 'D'], color: '#FFD93D' },
-  { name: 'BTS GPME', fullName: 'Gestion de la PME', emoji: '🏢', description: 'Gestion administrative, commerciale et comptable', profiles: ['C', 'E'], color: '#9C27B0' }
+  {
+    id: 'bts_mco',
+    name: 'BTS MCO',
+    fullName: 'Management Commercial Opérationnel',
+    emoji: '🏪',
+    description: 'Devenir un expert de la relation client et du management d\'unité.',
+    tags: ['convaincre', 'organiser'],
+    weights: { crea: 1, social: 3, data: 1, intl: 1 },
+    options: { apprenticeship: true, practice: true },
+    color: '#2D9B94',
+    badges: ['Relation client', 'Management', 'Alternance']
+  },
+  {
+    id: 'bts_ndrc',
+    name: 'BTS NDRC',
+    fullName: 'Négociation et Digitalisation',
+    emoji: '💼',
+    description: 'Maîtriser la vente et la relation client sous toutes ses formes digitales.',
+    tags: ['convaincre', 'analyser'],
+    weights: { crea: 1, social: 3, data: 2, intl: 1 },
+    options: { apprenticeship: true, practice: true },
+    color: '#4A90E2',
+    badges: ['Vente', 'Digital', 'Négociation']
+  },
+  {
+    id: 'bts_com',
+    name: 'BTS COM',
+    fullName: 'Communication',
+    emoji: '📱',
+    description: 'Concevoir et mettre en oeuvre des stratégies de communication créatives.',
+    tags: ['creer', 'international'],
+    weights: { crea: 3, social: 2, data: 1, intl: 2 },
+    options: { apprenticeship: true, practice: true },
+    color: '#FF6B9D',
+    badges: ['Créativité', 'Médias', 'Stratégie']
+  }
 ];
+
+const getOptionLabel = (stepKey: string, id: string) => {
+  const step = (questionData as any)[stepKey];
+  if (!step) return id;
+  if (step.options) {
+    return step.options.find((o: any) => o.id === id)?.label || id;
+  }
+  if (step.sliders) {
+    return step.sliders.find((s: any) => s.id === id)?.label || id;
+  }
+  return id;
+};
 
 export default function OrientationPage() {
   const router = useRouter();
+  const { answers, setAnswers, resetQuiz, results, setResults, generateMistralPrompt } = useOrientationStore();
   const [activeStep, setActiveStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string[]>>({ step1: [], step2: [], step3: [] });
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const currentStepKey = `step${activeStep + 1}` as keyof typeof questionData;
-  const currentQuestion = questionData[currentStepKey];
-  const maxSelections = activeStep === 0 ? 2 : 1;
-  const progress = ((activeStep + 1) / steps.length) * 100;
-
-  const handleSelectOption = (optionId: string) => {
-    const currentAnswers = answers[currentStepKey];
-    if (currentAnswers.includes(optionId)) {
-      setAnswers({ ...answers, [currentStepKey]: currentAnswers.filter(id => id !== optionId) });
-    } else {
-      if (maxSelections === 1) {
-        setAnswers({ ...answers, [currentStepKey]: [optionId] });
-      } else if (currentAnswers.length < maxSelections) {
-        setAnswers({ ...answers, [currentStepKey]: [...currentAnswers, optionId] });
-      }
-    }
-  };
+  const currentStepKey = `step${activeStep}` as keyof typeof questionData;
+  const currentQuestion = (questionData as any)[currentStepKey] || { title: '...', subtitle: '', options: [], sliders: [], content: '' };
+  const progress = (activeStep / (steps.length - 1)) * 100;
 
   const handleNext = () => {
-    if (activeStep === steps.length - 1) {
+    if (activeStep === 6) {
       setLoading(true);
+      const rec = getRecommendedFormations();
+      setResults(rec);
       setTimeout(() => { setLoading(false); setShowResults(true); }, 2000);
     } else {
       setActiveStep(prev => prev + 1);
@@ -112,17 +184,41 @@ export default function OrientationPage() {
   const handleBack = () => setActiveStep(prev => prev - 1);
 
   const getRecommendedFormations = () => {
-    return formations.filter(f => f.profiles.some(p => answers.step1.includes(p))).slice(0, 3);
+    return formations.map(f => {
+      let score = 0;
+      const userTags = answers?.step1?.tags || [];
+      const tagMatch = f.tags.filter(t => userTags.includes(t)).length;
+      score += tagMatch * 0.4;
+
+      const userPrefs = answers?.step2 || { crea: 1, social: 1, data: 1, intl: 1 };
+      const weightDiff = Math.abs((userPrefs.crea || 1) - f.weights.crea) +
+        Math.abs((userPrefs.social || 1) - f.weights.social) +
+        Math.abs((userPrefs.data || 1) - f.weights.data) +
+        Math.abs((userPrefs.intl || 1) - f.weights.intl);
+      score += (12 - weightDiff) / 12 * 0.3;
+
+      const userStep3 = answers?.step3 || [];
+      if (userStep3.includes('apprenticeship') && f.options.apprenticeship) score += 0.2;
+
+      const userStep6 = answers?.step6 || [];
+      if (userStep6.includes('boost_crea')) score += (f.weights.crea / 3) * 0.15;
+      if (userStep6.includes('boost_intl')) score += (f.weights.intl / 3) * 0.15;
+      if (userStep6.includes('boost_social')) score += (f.weights.social / 3) * 0.15;
+
+      const userStep5 = answers?.step5 || [];
+      if (userStep5.includes('alt_req') && !f.options.apprenticeship) score -= 0.5;
+
+      return { ...f, match: Math.min(Math.round(score * 100), 99) };
+    }).sort((a, b) => (b.match || 0) - (a.match || 0)).slice(0, 3);
   };
 
   const handleReset = () => {
+    resetQuiz();
     setShowResults(false);
     setActiveStep(0);
-    setAnswers({ step1: [], step2: [], step3: [] });
   };
 
   if (showResults) {
-    const recommended = getRecommendedFormations();
     return (
       <Box sx={{ minHeight: '100vh', background: '#FAFBFF', overflow: 'hidden' }}>
         <Box sx={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark}, ${colors.secondary})`, pt: 6, pb: 12 }}>
@@ -130,57 +226,102 @@ export default function OrientationPage() {
             <MotionBox initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} sx={{ textAlign: 'center' }}>
               <CheckCircle sx={{ fontSize: 80, color: '#fff', mb: 2 }} />
               <Typography variant="h3" sx={{ fontWeight: 800, color: '#fff', mb: 2 }}>🎉 Tes formations idéales !</Typography>
-              <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>Voici les formations qui correspondent à ton profil</Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>Découvre ton profil BilliBot et tes meilleures options</Typography>
             </MotionBox>
           </Container>
         </Box>
 
         <Container maxWidth="md" sx={{ mt: -6, pb: 8 }}>
-          {recommended.length > 0 ? (
-            <Grid container spacing={3}>
-              {recommended.map((formation, index) => (
-                <Grid size={12} key={index}>
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 12 }}>
+              <MotionCard initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} sx={{ borderRadius: 4, mb: 4, borderLeft: `6px solid ${colors.secondary}`, overflow: 'visible' }}>
+                <CardContent sx={{ p: 4 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 800, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    📑 Résumé de tes choix
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography variant="subtitle2" color="textSecondary">Ce que tu aimes :</Typography>
+                      <Typography sx={{ fontWeight: 600, mb: 1 }}>{answers.step1.freeText || 'Non précisé'}</Typography>
+                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                        {answers.step1.tags.map(t => <Chip key={t} label={getOptionLabel('step1', t)} size="small" />)}
+                      </Box>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography variant="subtitle2" color="textSecondary">Style de travail :</Typography>
+                      <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                        <Chip label={`🎨 Créa: ${answers.step2.crea}`} size="small" variant="outlined" />
+                        <Chip label={`👥 Social: ${answers.step2.social}`} size="small" variant="outlined" />
+                        <Chip label={`📊 Data: ${answers.step2.data}`} size="small" variant="outlined" />
+                      </Box>
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+                        <Chip icon={<EmojiObjects />} label={getOptionLabel('step4', answers.step4)} color="primary" variant="outlined" />
+                        {answers.step3.map(t => <Chip key={t} label={getOptionLabel('step3', t)} variant="outlined" />)}
+                        {answers.step5.map(t => <Chip key={t} label={`⚠️ ${getOptionLabel('step5', t)}`} color="error" variant="outlined" />)}
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </MotionCard>
+            </Grid>
+
+            {
+              results.map((formation: any, index: number) => (
+                <Grid size={{ xs: 12 }} key={formation.id}>
                   <MotionCard
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.15 }}
-                    whileHover={{ scale: 1.02 }}
-                    sx={{ borderRadius: 4, border: `3px solid ${formation.color}`, overflow: 'hidden' }}
+                    whileHover={{ scale: 1.01 }}
+                    sx={{ borderRadius: 4, border: `2px solid ${formation.color}`, overflow: 'hidden', mb: 2 }}
                   >
-                    <Box sx={{ height: 6, background: formation.color }} />
                     <CardContent sx={{ p: 4 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
                         <Typography sx={{ fontSize: '3rem', mr: 2 }}>{formation.emoji}</Typography>
                         <Box sx={{ flex: 1 }}>
                           <Typography variant="h5" sx={{ fontWeight: 700, color: formation.color }}>{formation.name}</Typography>
                           <Typography sx={{ color: '#666', fontSize: '0.9rem' }}>{formation.fullName}</Typography>
                         </Box>
-                        <Chip label={`Match ${90 - index * 10}%`} sx={{ background: formation.color, color: '#fff', fontWeight: 700 }} />
+                        <Chip
+                          label={`${formation.match}% Match`}
+                          sx={{ background: formation.color, color: '#fff', fontWeight: 700, px: 1 }}
+                        />
                       </Box>
+
                       <Typography sx={{ color: '#555', mb: 3 }}>{formation.description}</Typography>
-                      <Box sx={{ display: 'flex', gap: 2 }}>
-                        <Button variant="contained" sx={{ flex: 1, py: 1.5, background: formation.color, fontWeight: 600 }}>En savoir plus</Button>
-                        <Button variant="outlined" sx={{ flex: 1, py: 1.5, borderColor: formation.color, color: formation.color, fontWeight: 600 }} onClick={() => router.push('/candidat/admission')}>Candidater</Button>
+
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: '#333' }}>✨ Pourquoi ce match ?</Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {formation.badges.map((badge: string) => (
+                            <Chip key={badge} label={badge} size="small" sx={{ background: `${formation.color}15`, color: formation.color, fontWeight: 600 }} />
+                          ))}
+                        </Box>
                       </Box>
+
+                      <Grid container spacing={2}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                          <Button variant="contained" fullWidth sx={{ py: 1.5, background: formation.color, fontWeight: 600 }}>Candidater</Button>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                          <Button variant="outlined" fullWidth sx={{ py: 1.5, borderColor: formation.color, color: formation.color, fontWeight: 600 }}>En savoir plus</Button>
+                        </Grid>
+                      </Grid>
                     </CardContent>
                   </MotionCard>
                 </Grid>
-              ))}
-            </Grid>
-          ) : (
-            <Card sx={{ textAlign: 'center', p: 4, borderRadius: 4 }}>
-              <EmojiObjects sx={{ fontSize: 60, color: colors.secondary, mb: 2 }} />
-              <Typography variant="h6" sx={{ mb: 2 }}>Toutes nos formations peuvent te correspondre !</Typography>
-              <Button variant="contained" sx={{ background: colors.primary }}>Voir toutes les formations</Button>
-            </Card>
-          )}
+              ))
+            }
+          </Grid >
 
           <Box sx={{ textAlign: 'center', mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
             <Button variant="outlined" onClick={() => router.push('/candidat')}>Retour au menu</Button>
             <Button variant="contained" startIcon={<Refresh />} onClick={handleReset} sx={{ background: colors.primary }}>Refaire le quiz</Button>
           </Box>
-        </Container>
-      </Box>
+        </Container >
+      </Box >
     );
   }
 
@@ -188,7 +329,7 @@ export default function OrientationPage() {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})` }}>
         <MotionBox initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" sx={{ mb: 4, fontWeight: 700, color: '#fff' }}>Analyse de ton profil...</Typography>
+          <Typography variant="h4" sx={{ mb: 4, fontWeight: 700, color: '#fff' }}>BilliBot analyse ton profil...</Typography>
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
             {[0, 1, 2].map(i => (
               <MotionBox
@@ -210,8 +351,10 @@ export default function OrientationPage() {
         <Container maxWidth="md">
           <Button startIcon={<ArrowBack />} onClick={() => router.push('/candidat')} sx={{ color: '#fff', mb: 3 }}>Retour</Button>
           <MotionBox initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} sx={{ textAlign: 'center' }}>
-            <Typography variant="h3" sx={{ fontWeight: 800, color: '#fff', mb: 2 }}>🧭 Orientation Express</Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,0.9)' }}>Trouve ta formation idéale en 3 questions</Typography>
+            <Typography variant="h3" sx={{ fontWeight: 800, color: '#fff', mb: 2 }}>🧭 Orientation Express+</Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,0.9)' }}>
+              {activeStep === 0 ? 'Trouvons ta voie idéale' : `Étape ${activeStep} sur ${steps.length - 2}`}
+            </Typography>
           </MotionBox>
         </Container>
       </Box>
@@ -233,56 +376,126 @@ export default function OrientationPage() {
           </Box>
         </Card>
 
-        <MotionCard
-          key={activeStep}
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -50 }}
-          sx={{ borderRadius: 4, mb: 3 }}
-        >
+        <MotionCard key={activeStep} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} sx={{ borderRadius: 4, mb: 3 }}>
           <CardContent sx={{ p: 4 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{currentQuestion.title}</Typography>
-            <Typography sx={{ color: '#666', mb: 3 }}>{currentQuestion.subtitle}</Typography>
-
-            <Grid container spacing={2}>
-              {currentQuestion.options.map(option => {
-                const isSelected = answers[currentStepKey].includes(option.id);
-                return (
-                  <Grid size={{ xs: 12, sm: 6 }} key={option.id}>
-                    <MotionButton
-                      fullWidth
-                      variant={isSelected ? 'contained' : 'outlined'}
-                      onClick={() => handleSelectOption(option.id)}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      sx={{
-                        py: 2.5, px: 2, borderRadius: 3, textTransform: 'none', justifyContent: 'flex-start',
-                        background: isSelected ? `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})` : 'transparent',
-                        borderColor: isSelected ? colors.primary : '#ddd',
-                        color: isSelected ? '#fff' : '#333',
-                        '&:hover': { borderColor: colors.primary, background: isSelected ? `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})` : '#f5f5f5' }
-                      }}
-                    >
-                      <Typography sx={{ fontSize: '1.5rem', mr: 2 }}>{option.emoji}</Typography>
-                      <Typography sx={{ fontSize: '0.95rem', textAlign: 'left' }}>{option.label}</Typography>
-                    </MotionButton>
-                  </Grid>
-                );
-              })}
-            </Grid>
+            {!currentQuestion ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <CircularProgress sx={{ color: colors.primary }} />
+                <Typography sx={{ mt: 2 }}>Préparation des résultats...</Typography>
+              </Box>
+            ) : activeStep === 0 ? (
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, mb: 2 }}>{currentQuestion.title}</Typography>
+                <Typography sx={{ color: '#666', mb: 4, fontSize: '1.2rem' }}>{currentQuestion.subtitle}</Typography>
+                <Typography sx={{ color: '#555', mb: 4 }}>{(currentQuestion as any).content}</Typography>
+                <Button variant="contained" size="large" onClick={handleNext} sx={{ px: 6, py: 2, borderRadius: 4, background: colors.primary }}>C'est parti !</Button>
+              </Box>
+            ) : activeStep === 1 ? (
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{currentQuestion.title}</Typography>
+                <Typography sx={{ color: '#666', mb: 3 }}>{currentQuestion.subtitle}</Typography>
+                <textarea
+                  placeholder={(currentQuestion as any).placeholder}
+                  value={answers.step1.freeText}
+                  onChange={(e) => setAnswers('step1', { ...answers.step1, freeText: e.target.value })}
+                  style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '1px solid #ddd', minHeight: '100px', marginBottom: '20px', fontFamily: 'inherit', outline: 'none' }}
+                />
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {(currentQuestion as any).options.map((opt: any) => {
+                    const isSelected = answers.step1.tags.includes(opt.id);
+                    return (
+                      <Chip
+                        key={opt.id}
+                        label={`${opt.emoji} ${opt.label}`}
+                        onClick={() => {
+                          const newTags = isSelected ? answers.step1.tags.filter((id: string) => id !== opt.id) : [...answers.step1.tags, opt.id];
+                          setAnswers('step1', { ...answers.step1, tags: newTags });
+                        }}
+                        sx={{
+                          p: 1.5, height: 40, cursor: 'pointer',
+                          background: isSelected ? colors.primary : '#f0f0f0',
+                          color: isSelected ? '#fff' : '#333',
+                          '&:hover': { background: isSelected ? colors.primaryDark : '#e0e0e0' }
+                        }}
+                      />
+                    );
+                  })}
+                </Box>
+              </Box>
+            ) : activeStep === 2 ? (
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{currentQuestion.title}</Typography>
+                <Typography sx={{ color: '#666', mb: 4 }}>{currentQuestion.subtitle}</Typography>
+                {(currentQuestion as any).sliders.map((s: any) => (
+                  <Box key={s.id} sx={{ mb: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography sx={{ fontWeight: 600 }}>{s.emoji} {s.label}</Typography>
+                      <Typography sx={{ color: colors.primary, fontWeight: 700 }}>{answers.step2[s.id as keyof typeof answers.step2]}</Typography>
+                    </Box>
+                    <input
+                      type="range"
+                      min="0"
+                      max="3"
+                      value={answers.step2[s.id as keyof typeof answers.step2]}
+                      onChange={(e) => setAnswers('step2', { ...answers.step2, [s.id]: parseInt(e.target.value) })}
+                      style={{ width: '100%', accentColor: colors.primary, cursor: 'pointer' }}
+                    />
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{currentQuestion.title}</Typography>
+                <Typography sx={{ color: '#666', mb: 3 }}>{currentQuestion.subtitle}</Typography>
+                <Grid container spacing={2}>
+                  {(currentQuestion as any).options?.map((option: any) => {
+                    const stepAnswers = answers[currentStepKey as keyof typeof answers];
+                    const isSelected = Array.isArray(stepAnswers)
+                      ? stepAnswers.includes(option.id)
+                      : stepAnswers === option.id;
+                    return (
+                      <Grid size={{ xs: 12, sm: 6 }} key={option.id}>
+                        <MotionButton
+                          fullWidth
+                          variant={isSelected ? 'contained' : 'outlined'}
+                          onClick={() => {
+                            if (Array.isArray(stepAnswers)) {
+                              const newArr = isSelected
+                                ? stepAnswers.filter((id: string) => id !== option.id)
+                                : [...stepAnswers, option.id];
+                              setAnswers(currentStepKey, newArr);
+                            } else {
+                              setAnswers(currentStepKey, option.id);
+                            }
+                          }}
+                          sx={{
+                            py: 2, px: 2, borderRadius: 3, textTransform: 'none', justifyContent: 'flex-start',
+                            background: isSelected ? colors.primary : 'transparent',
+                            color: isSelected ? '#fff' : '#333',
+                            borderColor: isSelected ? colors.primary : '#ddd'
+                          }}
+                        >
+                          <Typography sx={{ fontSize: '1.5rem', mr: 2 }}>{option.emoji}</Typography>
+                          <Typography>{option.label}</Typography>
+                        </MotionButton>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              </Box>
+            )}
           </CardContent>
         </MotionCard>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
           <Button disabled={activeStep === 0} onClick={handleBack} startIcon={<ArrowBack />}>Précédent</Button>
           <Button
             variant="contained"
-            disabled={answers[currentStepKey].length === 0}
             onClick={handleNext}
             endIcon={<ArrowForward />}
-            sx={{ px: 4, background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})` }}
+            sx={{ px: 4, background: colors.primary, borderRadius: 2 }}
           >
-            {activeStep === steps.length - 1 ? 'Voir mes résultats' : 'Suivant'}
+            {activeStep === steps.length - 2 ? 'Découvrir mes résultats' : 'Suivant'}
           </Button>
         </Box>
       </Container>

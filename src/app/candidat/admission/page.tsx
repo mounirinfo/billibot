@@ -25,7 +25,11 @@ import {
   ArrowForward,
   AccessTime,
   Verified,
-  Speed
+  Speed,
+  SentimentVerySatisfied,
+  SentimentSatisfiedAlt,
+  Psychology,
+  AssignmentTurnedIn
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -39,7 +43,8 @@ const colors = {
   secondary: '#FFD93D',
   primaryDark: '#1F7A72',
   secondaryDark: '#E5C235',
-  blue: '#4A90E2'
+  blue: '#4A90E2',
+  purple: '#9C27B0'
 };
 
 const fadeInUp = {
@@ -116,6 +121,20 @@ const formations = [
   { name: 'Bachelor Marketing', type: 'direct', desc: 'Bac+3 Marketing Digital' }
 ];
 
+const funCopy = {
+  parcoursup: [
+    { title: 'Level 1: Le Dossier', desc: 'On remplit la paperasse sans pleurer.', emoji: '📂' },
+    { title: 'Level 2: Les Vœux', desc: 'On choisit sa vie (pas de pression !).', emoji: '🤞' },
+    { title: 'Level 3: L\'Attente', desc: 'On rafraîchit la page 542 fois par jour.', emoji: '🔄' },
+    { title: 'Victory!', desc: 'Champomy pour tout le monde !', emoji: '🥂' }
+  ],
+  direct: [
+    { title: 'Speedrun: Le Formulaire', desc: 'Aussi rapide qu\'un post Insta.', emoji: '⚡' },
+    { title: 'Boss Fight: L\'Entretien', desc: 'Un café, un sourire, et c\'est gagné.', emoji: '☕' },
+    { title: 'GG WP: Admission', desc: 'Welcome to the team, champion(ne).', emoji: '💎' }
+  ]
+};
+
 const advantages = [
   { icon: Speed, title: 'Réponse rapide', desc: 'Sous 48h pour candidature directe' },
   { icon: Verified, title: 'Formations certifiées', desc: 'Diplômes reconnus par l\'État' },
@@ -125,19 +144,51 @@ const advantages = [
 export default function AdmissionPage() {
   const router = useRouter();
   const [selectedPath, setSelectedPath] = useState<'parcoursup' | 'direct' | null>(null);
+  const [isFunMode, setIsFunMode] = useState(false);
+  const [showDiagnostic, setShowDiagnostic] = useState(true);
+  const [diagResult, setDiagResult] = useState<'parcoursup' | 'direct' | null>(null);
+
+  const handleDiagnostic = (reponse: string) => {
+    if (reponse === 'bac') {
+      setDiagResult('parcoursup');
+      setSelectedPath('parcoursup');
+    } else {
+      setDiagResult('direct');
+      setSelectedPath('direct');
+    }
+    setShowDiagnostic(false);
+  };
 
   return (
     <Box sx={{ minHeight: '100vh', background: '#FAFBFF', overflow: 'hidden' }}>
 
       <Box
         sx={{
-          background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 50%, ${colors.secondary} 100%)`,
+          background: isFunMode
+            ? `linear-gradient(135deg, ${colors.purple} 0%, ${colors.primary} 100%)`
+            : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 50%, ${colors.secondary} 100%)`,
           pt: { xs: 12, md: 16 },
           pb: { xs: 8, md: 12 },
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          transition: 'background 0.5s ease'
         }}
       >
+        <Box sx={{ position: 'absolute', top: 100, right: 20, zIndex: 10 }}>
+          <Button
+            variant="contained"
+            onClick={() => setIsFunMode(!isFunMode)}
+            sx={{
+              background: isFunMode ? colors.secondary : 'rgba(255,255,255,0.2)',
+              color: isFunMode ? '#1a1a2e' : '#fff',
+              fontWeight: 800,
+              borderRadius: 4
+            }}
+            startIcon={isFunMode ? <SentimentVerySatisfied /> : <SentimentSatisfiedAlt />}
+          >
+            {isFunMode ? 'Mode Fun : ON 🚀' : 'Activer Mode Fun ?'}
+          </Button>
+        </Box>
         <MotionBox
           animate={{ rotate: 360, scale: [1, 1.1, 1] }}
           transition={{ rotate: { duration: 40, repeat: Infinity, ease: 'linear' }, scale: { duration: 8, repeat: Infinity } }}
@@ -198,7 +249,7 @@ export default function AdmissionPage() {
                 textShadow: '0 2px 20px rgba(0,0,0,0.15)'
               }}
             >
-              Deux voies d'accès à votre avenir 🎓
+              {isFunMode ? 'On t\'embarque dans l\'aventure ! 🎢' : 'Deux voies d\'accès à votre avenir 🎓'}
             </Typography>
             <Typography
               sx={{
@@ -207,8 +258,35 @@ export default function AdmissionPage() {
                 lineHeight: 1.7
               }}
             >
-              Choisissez le parcours qui correspond à votre situation : via Parcoursup ou en candidature directe
+              {isFunMode
+                ? 'Pas de stress, on va t\'expliquer comment ça marche sans jargon pompeux.'
+                : 'Choisissez le parcours qui correspond à votre situation : via Parcoursup ou en candidature directe'}
             </Typography>
+
+            {showDiagnostic && (
+              <MotionCard
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                sx={{ mt: 4, borderRadius: 6, p: 3, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)' }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 800, mb: 2, color: colors.primary }}>🧠 Aide-moi à te guider :</Typography>
+                <Typography sx={{ mb: 3 }}>Quel est ton profil actuel ?</Typography>
+                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                  <Button variant="outlined" onClick={() => handleDiagnostic('bac')} sx={{ borderRadius: 3, py: 1.5, px: 3 }}>Je passe mon Bac (Terminale)</Button>
+                  <Button variant="outlined" onClick={() => handleDiagnostic('reorient')} sx={{ borderRadius: 3, py: 1.5, px: 3 }}>Je suis déjà diplômé ou en réorientation</Button>
+                </Box>
+              </MotionCard>
+            )}
+
+            {diagResult && !showDiagnostic && (
+              <MotionBox initial={{ opacity: 0 }} animate={{ opacity: 1 }} sx={{ mt: 3 }}>
+                <Chip
+                  icon={<Psychology sx={{ color: '#fff !important' }} />}
+                  label={diagResult === 'parcoursup' ? "On te conseille la voie Parcoursup !" : "Le parcours direct est fait pour toi !"}
+                  sx={{ background: colors.secondary, color: '#1a1a2e', fontWeight: 700, p: 2 }}
+                />
+              </MotionBox>
+            )}
           </MotionBox>
         </Container>
       </Box>
@@ -394,40 +472,49 @@ export default function AdmissionPage() {
               </Box>
               <CardContent sx={{ p: { xs: 2, md: 4 } }}>
                 <Stepper orientation="vertical">
-                  {parcoursupSteps.map((step, index) => {
-                    const IconComponent = step.icon;
+                  {(isFunMode ? funCopy.parcoursup : parcoursupSteps).map((step: any, index: number) => {
                     return (
                       <Step key={index} active expanded>
                         <StepLabel
-                          StepIconComponent={() => (
-                            <Box sx={{
-                              width: 45,
-                              height: 45,
-                              borderRadius: '50%',
-                              background: `linear-gradient(135deg, ${colors.blue}, #2196F3)`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}>
-                              <IconComponent sx={{ color: '#fff', fontSize: 24 }} />
-                            </Box>
-                          )}
+                          StepIconComponent={() => {
+                            const IconComp = !isFunMode ? step.icon : null;
+                            return (
+                              <Box sx={{
+                                width: 45,
+                                height: 45,
+                                borderRadius: '50%',
+                                background: isFunMode ? colors.purple : `linear-gradient(135deg, ${colors.blue}, #2196F3)`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: isFunMode ? '1.5rem' : 'inherit'
+                              }}>
+                                {isFunMode ? (
+                                  step.emoji
+                                ) : (
+                                  IconComp && <IconComp sx={{ color: '#fff', fontSize: 24 }} />
+                                )}
+                              </Box>
+                            );
+                          }}
                         >
                           <Box sx={{ ml: 1 }}>
                             <Typography variant="h6" sx={{ fontWeight: 700 }}>{step.title}</Typography>
-                            <Chip label={step.date} size="small" sx={{ mt: 0.5 }} />
+                            {step.date && <Chip label={step.date} size="small" sx={{ mt: 0.5 }} />}
                           </Box>
                         </StepLabel>
                         <StepContent>
-                          <Typography sx={{ color: '#555', mb: 2 }}>{step.description}</Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                            {step.details.map((d, i) => (
-                              <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <CheckCircle sx={{ fontSize: 16, color: colors.blue }} />
-                                <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>{d}</Typography>
-                              </Box>
-                            ))}
-                          </Box>
+                          <Typography sx={{ color: '#555', mb: 2 }}>{step.description || step.desc}</Typography>
+                          {!isFunMode && step.details && (
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                              {step.details.map((d: string, i: number) => (
+                                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <CheckCircle sx={{ fontSize: 16, color: colors.blue }} />
+                                  <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>{d}</Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
                         </StepContent>
                       </Step>
                     );
@@ -441,14 +528,14 @@ export default function AdmissionPage() {
                     target="_blank"
                     endIcon={<ArrowForward />}
                     sx={{
-                      background: `linear-gradient(135deg, ${colors.blue}, #2196F3)`,
+                      background: isFunMode ? colors.purple : `linear-gradient(135deg, ${colors.blue}, #2196F3)`,
                       fontWeight: 700,
                       px: 5,
                       py: 1.5,
                       borderRadius: 3
                     }}
                   >
-                    Accéder à Parcoursup
+                    {isFunMode ? 'On y va ? Go !' : 'Accéder à Parcoursup'}
                   </Button>
                 </Box>
               </CardContent>
@@ -464,48 +551,54 @@ export default function AdmissionPage() {
             transition={{ duration: 0.4 }}
             sx={{ mt: 4 }}
           >
-            <Card sx={{ borderRadius: 4, border: `2px solid ${colors.primary}`, overflow: 'hidden' }}>
-              <Box sx={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`, py: 3, px: 4 }}>
+            <Card sx={{ borderRadius: 4, border: isFunMode ? `2px solid ${colors.purple}` : `2px solid ${colors.primary}`, overflow: 'hidden' }}>
+              <Box sx={{ background: isFunMode ? colors.purple : `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`, py: 3, px: 4 }}>
                 <Typography variant="h5" sx={{ color: '#fff', fontWeight: 700 }}>
-                  🎓 Processus de candidature directe
+                  {isFunMode ? '🏃‍♂️ Le Speedrun Direct' : '🎓 Processus de candidature directe'}
                 </Typography>
               </Box>
               <CardContent sx={{ p: { xs: 2, md: 4 } }}>
                 <Stepper orientation="vertical">
-                  {horsParcoursupSteps.map((step, index) => {
-                    const IconComponent = step.icon;
+                  {(isFunMode ? funCopy.direct : horsParcoursupSteps).map((step: any, index: number) => {
                     return (
                       <Step key={index} active expanded>
                         <StepLabel
-                          StepIconComponent={() => (
+                          StepIconComponent={(props) => (
                             <Box sx={{
                               width: 45,
                               height: 45,
                               borderRadius: '50%',
-                              background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`,
+                              background: isFunMode ? colors.purple : `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`,
                               display: 'flex',
                               alignItems: 'center',
-                              justifyContent: 'center'
+                              justifyContent: 'center',
+                              fontSize: isFunMode ? '1.5rem' : 'inherit'
                             }}>
-                              <IconComponent sx={{ color: '#fff', fontSize: 24 }} />
+                              {isFunMode ? (
+                                step.emoji
+                              ) : (
+                                <step.icon sx={{ color: '#fff', fontSize: 24 }} />
+                              )}
                             </Box>
                           )}
                         >
                           <Box sx={{ ml: 1 }}>
                             <Typography variant="h6" sx={{ fontWeight: 700 }}>{step.title}</Typography>
-                            <Chip label={step.date} size="small" sx={{ mt: 0.5, background: `${colors.secondary}30` }} />
+                            {step.date && <Chip label={step.date} size="small" sx={{ mt: 0.5, background: `${colors.secondary}30` }} />}
                           </Box>
                         </StepLabel>
                         <StepContent>
-                          <Typography sx={{ color: '#555', mb: 2 }}>{step.description}</Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                            {step.details.map((d, i) => (
-                              <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <CheckCircle sx={{ fontSize: 16, color: colors.primary }} />
-                                <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>{d}</Typography>
-                              </Box>
-                            ))}
-                          </Box>
+                          <Typography sx={{ color: '#555', mb: 2 }}>{step.description || step.desc}</Typography>
+                          {!isFunMode && step.details && (
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                              {step.details.map((d: string, i: number) => (
+                                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <CheckCircle sx={{ fontSize: 16, color: colors.primary }} />
+                                  <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>{d}</Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
                         </StepContent>
                       </Step>
                     );
@@ -518,14 +611,14 @@ export default function AdmissionPage() {
                     onClick={() => router.push('/candidat/contact')}
                     endIcon={<ArrowForward />}
                     sx={{
-                      background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`,
+                      background: isFunMode ? colors.purple : `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`,
                       fontWeight: 700,
                       px: 5,
                       py: 1.5,
                       borderRadius: 3
                     }}
                   >
-                    Candidater maintenant
+                    {isFunMode ? 'Start Now !' : 'Candidater maintenant'}
                   </Button>
                 </Box>
               </CardContent>
@@ -536,6 +629,60 @@ export default function AdmissionPage() {
 
       <Box sx={{ py: { xs: 6, md: 10 }, background: '#fff', mt: 6 }}>
         <Container maxWidth="lg">
+          <Grid container spacing={6}>
+            <Grid size={{ xs: 12, md: 7 }}>
+              <MotionBox initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
+                <Typography variant="h4" sx={{ fontWeight: 800, mb: 4 }}>📝 Ton "Projet Motivé" Express</Typography>
+                <Typography sx={{ color: '#666', mb: 4 }}>Besoin d'inspiration pour ta lettre de motivation ? Choisis ta filière :</Typography>
+
+                <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
+                  {['Business/Vente', 'Communication', 'International'].map(topic => (
+                    <Button
+                      key={topic}
+                      variant="outlined"
+                      onClick={() => alert(`Génération du template pour ${topic}... (Ceci est une simulation de générateur)`)}
+                      sx={{ borderRadius: 3, border: `2px solid ${colors.primary}`, color: colors.primary, fontWeight: 700 }}
+                    >
+                      {topic}
+                    </Button>
+                  ))}
+                </Box>
+
+                <Card sx={{ bgcolor: '#f9f9f9', border: '1px dashed #ccc', p: 3, borderRadius: 4 }}>
+                  <Typography variant="subtitle2" sx={{ color: colors.primary, fontWeight: 800, mb: 1 }}>STRUCTURE CONSEILLÉE :</Typography>
+                  <Box component="ul" sx={{ pl: 2, color: '#555' }}>
+                    <li><strong>Moi :</strong> Mon parcours actuel et mes passions.</li>
+                    <li><strong>Vous :</strong> Pourquoi cette école précisément ?</li>
+                    <li><strong>Nous :</strong> Ce que je vais apporter à la classe.</li>
+                  </Box>
+                </Card>
+              </MotionBox>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 5 }}>
+              <MotionBox initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
+                <Typography variant="h4" sx={{ fontWeight: 800, mb: 4 }}>📁 Checklist Dossier</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {[
+                    'Bulletins de 1ère et Terminale',
+                    'CV à jour (utilisez nos conseils !)',
+                    'Pièce d\'identité',
+                    'Avis de poursuite d\'études'
+                  ].map((doc, i) => (
+                    <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, bgcolor: '#FAFBFF', borderRadius: 3, border: '1px solid #eee' }}>
+                      <AssignmentTurnedIn sx={{ color: colors.primary }} />
+                      <Typography sx={{ fontWeight: 600 }}>{doc}</Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </MotionBox>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      <Box sx={{ py: { xs: 6, md: 10 }, background: '#F4F7F6' }}>
+        <Container maxWidth="lg">
           <MotionBox
             initial="hidden"
             whileInView="visible"
@@ -544,7 +691,7 @@ export default function AdmissionPage() {
             sx={{ textAlign: 'center', mb: 6 }}
           >
             <Typography variant="h4" sx={{ fontWeight: 800, mb: 2, color: '#1a1a2e' }}>
-              Pourquoi nous choisir ?
+              {isFunMode ? 'Pourquoi la Billi-Team est au top ? ✨' : 'Pourquoi nous choisir ?'}
             </Typography>
           </MotionBox>
 
@@ -564,8 +711,9 @@ export default function AdmissionPage() {
                       textAlign: 'center',
                       p: 4,
                       borderRadius: 4,
-                      background: 'linear-gradient(180deg, #FAFBFF, #fff)',
+                      background: '#fff',
                       border: '1px solid #eee',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
                       transition: 'all 0.3s'
                     }}
                   >
@@ -594,7 +742,9 @@ export default function AdmissionPage() {
 
       <Box sx={{
         py: { xs: 6, md: 8 },
-        background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`,
+        background: isFunMode
+          ? `linear-gradient(135deg, ${colors.purple}, ${colors.primaryDark})`
+          : `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`,
         textAlign: 'center'
       }}>
         <Container maxWidth="md">
@@ -604,10 +754,10 @@ export default function AdmissionPage() {
             viewport={{ once: true }}
           >
             <Typography variant="h4" sx={{ fontWeight: 800, color: '#fff', mb: 2 }}>
-              💬 Besoin d'aide pour choisir ?
+              {isFunMode ? 'On discute de ton avenir ? 📞' : '💬 Besoin d\'aide pour choisir ?'}
             </Typography>
             <Typography sx={{ color: 'rgba(255,255,255,0.9)', mb: 4, fontSize: '1.1rem' }}>
-              Notre équipe vous accompagne dans votre parcours
+              {isFunMode ? 'Nos coachs sont là pour toi (et ils ne mordent pas !)' : 'Notre équipe vous accompagne dans votre parcours'}
             </Typography>
             <Button
               variant="contained"
@@ -624,7 +774,7 @@ export default function AdmissionPage() {
                 '&:hover': { background: colors.secondaryDark }
               }}
             >
-              Contacter un conseiller
+              Candidater / Poser une question
             </Button>
           </MotionBox>
         </Container>

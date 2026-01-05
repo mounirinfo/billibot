@@ -86,6 +86,26 @@ const questionsSurprise = [
   'Racontez un projet dont vous êtes fier'
 ];
 
+const templates = {
+  STAR: {
+    name: 'Méthode STAR',
+    steps: [
+      { label: 'Situation', desc: 'Contexte de l’action', icon: '📍' },
+      { label: 'Task', desc: 'Objectif ou problème', icon: '🎯' },
+      { label: 'Action', desc: 'Ce que TU as fait', icon: '⚡' },
+      { label: 'Result', desc: 'Résultat / Apprentissage', icon: '🏆' }
+    ]
+  },
+  '3C': {
+    name: 'Méthode 3C',
+    steps: [
+      { label: 'Contexte', desc: 'Le cadre général', icon: '📽️' },
+      { label: 'Compétences', desc: 'Tes atouts mobilisés', icon: '🛠️' },
+      { label: 'Cible', desc: 'Pourquoi ici demain ?', icon: '🎯' }
+    ]
+  }
+};
+
 export default function EntretienPage() {
   const router = useRouter();
   const [timer30, setTimer30] = useState(30);
@@ -93,6 +113,11 @@ export default function EntretienPage() {
   const [isRunning30, setIsRunning30] = useState(false);
   const [isRunning60, setIsRunning60] = useState(false);
   const [randomQuestion, setRandomQuestion] = useState('');
+
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simStep, setSimStep] = useState(0);
+  const [activeTemplate, setActiveTemplate] = useState<'STAR' | '3C' | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -115,6 +140,12 @@ export default function EntretienPage() {
     if (pct > 50) return colors.primary;
     if (pct > 25) return colors.secondary;
     return colors.pink;
+  };
+
+  const startSimulation = () => {
+    setIsSimulating(true);
+    setSimStep(0);
+    setRandomQuestion(questionsFrequentes[0].question);
   };
 
   return (
@@ -144,87 +175,168 @@ export default function EntretienPage() {
 
       <Container maxWidth="lg" sx={{ py: 6 }}>
 
+        {isSimulating && (
+          <MotionBox
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            sx={{
+              position: 'fixed', inset: 0, zIndex: 1000, bgcolor: 'rgba(26,26,46,0.95)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3
+            }}
+          >
+            <Container maxWidth="md">
+              <Card sx={{ borderRadius: 6, p: 4, textAlign: 'center', bgcolor: '#fff', position: 'relative' }}>
+                <Box sx={{ position: 'absolute', top: 20, left: 20, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', background: '#ff4444', animation: 'pulse 1.5s infinite' }} />
+                  <Typography sx={{ fontWeight: 700, color: '#ff4444', fontSize: '0.8rem' }}>REC • CAMERA ON</Typography>
+                </Box>
+                <Button sx={{ position: 'absolute', top: 20, right: 20 }} onClick={() => setIsSimulating(false)}><Stop /></Button>
+
+                <Typography variant="h6" sx={{ color: colors.primary, mb: 1, fontWeight: 700 }}>Question {simStep + 1}/5</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 800, mb: 4 }}>{randomQuestion}</Typography>
+
+                <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
+                  <CircularProgress size={160} thickness={4} variant="indeterminate" sx={{ color: colors.primary }} />
+                </Box>
+
+                <Typography sx={{ color: '#666', mb: 4 }}>Observe ta posture et évite les tics de langage...</Typography>
+
+                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                  <Button variant="outlined" onClick={() => setIsSimulating(false)}>Arrêter</Button>
+                  <Button variant="contained" sx={{ px: 4, background: colors.primary }} onClick={() => {
+                    if (simStep < 4) {
+                      setSimStep(prev => prev + 1);
+                      setRandomQuestion(questionsSurprise[Math.floor(Math.random() * 6)]);
+                    } else {
+                      setIsSimulating(false);
+                      setFeedbackOpen(true);
+                    }
+                  }}>
+                    {simStep === 4 ? 'Terminer & Analyser' : 'Question Suivante'}
+                  </Button>
+                </Box>
+              </Card>
+            </Container>
+          </MotionBox>
+        )}
+
         <MotionBox initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} sx={{ mb: 8 }}>
-          <Typography variant="h4" sx={{ fontWeight: 800, mb: 4, textAlign: 'center' }}>⏱️ Entraîne-toi</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 4, textAlign: 'center' }}>⚡ BilliCoach Tools</Typography>
           <Grid container spacing={4}>
             <Grid size={{ xs: 12, md: 4 }}>
-              <MotionCard variants={fadeInUp} whileHover={{ y: -8 }} sx={{ height: '100%', borderRadius: 4, border: `2px solid ${colors.primary}`, textAlign: 'center' }}>
-                <Box sx={{ height: 6, background: `linear-gradient(90deg, ${colors.primary}, ${colors.primaryDark})` }} />
+              <MotionCard variants={fadeInUp} whileHover={{ y: -8 }} sx={{ height: '100%', borderRadius: 4, background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`, color: '#fff' }}>
+                <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                  <Typography variant="h5" sx={{ fontWeight: 800, mb: 2 }}>🎭 Simulation Live</Typography>
+                  <Typography sx={{ color: 'rgba(255,255,255,0.8)', mb: 3 }}>Simulation d'entretien realiste avec camera activee.</Typography>
+                  <Button variant="contained" size="large" fullWidth onClick={startSimulation} sx={{ background: colors.secondary, color: '#1a1a2e', fontWeight: 700 }}>Lancer la simulation</Button>
+                </CardContent>
+              </MotionCard>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 8 }}>
+              <MotionCard variants={fadeInUp} whileHover={{ y: -8 }} sx={{ height: '100%', borderRadius: 4 }}>
                 <CardContent sx={{ p: 4 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>⚡ Pitch 30 secondes</Typography>
-                  <Typography sx={{ color: '#666', mb: 3, fontSize: '0.9rem' }}>Présente-toi de manière concise</Typography>
-                  <Box sx={{ position: 'relative', display: 'inline-flex', mb: 3 }}>
-                    <CircularProgress variant="determinate" value={(timer30 / 30) * 100} size={140} thickness={6} sx={{ color: getTimerColor(timer30, 30) }} />
+                  <Typography variant="h5" sx={{ fontWeight: 800, mb: 3 }}>🛠️ Méthodes de réponse</Typography>
+                  <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                    {Object.keys(templates).map(t => (
+                      <Button
+                        key={t}
+                        variant={activeTemplate === t ? 'contained' : 'outlined'}
+                        onClick={() => setActiveTemplate(t as any)}
+                        sx={{ flex: 1, py: 1.5, borderRadius: 2 }}
+                      >
+                        {t}
+                      </Button>
+                    ))}
+                  </Box>
+                  {activeTemplate && (
+                    <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 1 }}>
+                      {templates[activeTemplate].steps.map((s, i) => (
+                        <Box key={i} sx={{ minWidth: 140, p: 2, bgcolor: '#f5f5f5', borderRadius: 3, textAlign: 'center' }}>
+                          <Typography sx={{ fontSize: '1.5rem', mb: 1 }}>{s.icon}</Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 800, display: 'block' }}>{s.label}</Typography>
+                          <Typography variant="caption" sx={{ color: '#666', fontSize: '0.7rem' }}>{s.desc}</Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+                  {!activeTemplate && <Typography sx={{ color: '#999', textAlign: 'center', py: 4 }}>Choisis une méthode pour voir la structure de réponse idéale.</Typography>}
+                </CardContent>
+              </MotionCard>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 6 }}>
+              <MotionCard variants={fadeInUp} sx={{ borderRadius: 4, border: `2px solid ${colors.blue}` }}>
+                <CardContent sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                    <CircularProgress variant="determinate" value={(timer30 / 30) * 100} size={80} thickness={6} sx={{ color: getTimerColor(timer30, 30) }} />
                     <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Typography variant="h3" sx={{ fontWeight: 700, color: getTimerColor(timer30, 30) }}>{timer30}s</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700 }}>{timer30}s</Typography>
                     </Box>
                   </Box>
-                  {timer30 === 0 && <Chip label="🎉 Terminé !" sx={{ mb: 2, background: colors.primary, color: '#fff', fontWeight: 700 }} />}
-                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                    {!isRunning30 ? (
-                      <Button variant="contained" startIcon={<PlayArrow />} onClick={() => setIsRunning30(true)} disabled={timer30 === 0} sx={{ flex: 1, background: colors.primary }}>Start</Button>
-                    ) : (
-                      <Button variant="contained" startIcon={<Stop />} onClick={() => setIsRunning30(false)} sx={{ flex: 1, background: colors.pink }}>Stop</Button>
-                    )}
-                    <Button variant="outlined" onClick={() => { setTimer30(30); setIsRunning30(false); }}><Refresh /></Button>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>Pitch Flash</Typography>
+                    <Typography variant="caption" sx={{ color: '#666', mb: 2, display: 'block' }}>Efficacité & Concision</Typography>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button size="small" variant="contained" onClick={() => setIsRunning30(!isRunning30)} sx={{ background: isRunning30 ? colors.pink : colors.primary }}>{isRunning30 ? 'Stop' : 'Start'}</Button>
+                      <Button size="small" variant="outlined" onClick={() => setTimer30(30)}>Reset</Button>
+                    </Box>
                   </Box>
                 </CardContent>
               </MotionCard>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 4 }}>
-              <MotionCard variants={fadeInUp} whileHover={{ y: -8 }} sx={{ height: '100%', borderRadius: 4, border: `2px solid ${colors.blue}`, textAlign: 'center' }}>
-                <Box sx={{ height: 6, background: `linear-gradient(90deg, ${colors.blue}, #2196F3)` }} />
-                <CardContent sx={{ p: 4 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>🚀 Pitch 1 minute</Typography>
-                  <Typography sx={{ color: '#666', mb: 3, fontSize: '0.9rem' }}>Développe ton parcours et projet</Typography>
-                  <Box sx={{ position: 'relative', display: 'inline-flex', mb: 3 }}>
-                    <CircularProgress variant="determinate" value={(timer60 / 60) * 100} size={140} thickness={6} sx={{ color: getTimerColor(timer60, 60) }} />
+            <Grid size={{ xs: 12, md: 6 }}>
+              <MotionCard variants={fadeInUp} sx={{ borderRadius: 4, border: `2px solid ${colors.pink}` }}>
+                <CardContent sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                    <CircularProgress variant="determinate" value={(timer60 / 60) * 100} size={80} thickness={6} sx={{ color: getTimerColor(timer60, 60) }} />
                     <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Typography variant="h3" sx={{ fontWeight: 700, color: getTimerColor(timer60, 60) }}>{timer60}s</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700 }}>{timer60}s</Typography>
                     </Box>
                   </Box>
-                  {timer60 === 0 && <Chip label="🎉 Terminé !" sx={{ mb: 2, background: colors.blue, color: '#fff', fontWeight: 700 }} />}
-                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                    {!isRunning60 ? (
-                      <Button variant="contained" startIcon={<PlayArrow />} onClick={() => setIsRunning60(true)} disabled={timer60 === 0} sx={{ flex: 1, background: colors.blue }}>Start</Button>
-                    ) : (
-                      <Button variant="contained" startIcon={<Stop />} onClick={() => setIsRunning60(false)} sx={{ flex: 1, background: colors.pink }}>Stop</Button>
-                    )}
-                    <Button variant="outlined" onClick={() => { setTimer60(60); setIsRunning60(false); }}><Refresh /></Button>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>Pitch Expert</Typography>
+                    <Typography variant="caption" sx={{ color: '#666', mb: 2, display: 'block' }}>Détails & Storytelling</Typography>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button size="small" variant="contained" onClick={() => setIsRunning60(!isRunning60)} sx={{ background: isRunning60 ? colors.pink : colors.blue }}>{isRunning60 ? 'Stop' : 'Start'}</Button>
+                      <Button size="small" variant="outlined" onClick={() => setTimer60(60)}>Reset</Button>
+                    </Box>
                   </Box>
-                </CardContent>
-              </MotionCard>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 4 }}>
-              <MotionCard variants={fadeInUp} whileHover={{ y: -8 }} sx={{ height: '100%', borderRadius: 4, border: `2px solid ${colors.pink}`, textAlign: 'center' }}>
-                <Box sx={{ height: 6, background: `linear-gradient(90deg, ${colors.pink}, #E91E63)` }} />
-                <CardContent sx={{ p: 4 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>🎲 Question surprise</Typography>
-                  <Typography sx={{ color: '#666', mb: 3, fontSize: '0.9rem' }}>Entraîne-toi à répondre spontanément</Typography>
-                  <Box sx={{ minHeight: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, mb: 3, background: randomQuestion ? '#FFF3E0' : '#f5f5f5', borderRadius: 3, border: randomQuestion ? `2px solid ${colors.pink}` : '2px dashed #ddd' }}>
-                    {randomQuestion ? (
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: '#333', textAlign: 'center' }}>{randomQuestion}</Typography>
-                    ) : (
-                      <Typography sx={{ color: '#999' }}>Clique pour découvrir une question</Typography>
-                    )}
-                  </Box>
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    onClick={() => setRandomQuestion(questionsSurprise[Math.floor(Math.random() * questionsSurprise.length)])}
-                    sx={{ py: 1.5, background: `linear-gradient(135deg, ${colors.pink}, #E91E63)`, fontWeight: 600 }}
-                  >
-                    Nouvelle question
-                  </Button>
                 </CardContent>
               </MotionCard>
             </Grid>
           </Grid>
         </MotionBox>
 
-        <MotionBox initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer}>
+        {feedbackOpen && (
+          <MotionBox initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} sx={{ mb: 8, p: 4, bgcolor: '#e8f5e9', borderRadius: 6, border: `2px solid ${colors.primary}` }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, mb: 2 }}>🏆 Analyse BilliCoach</Typography>
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: 3 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: colors.primary }}>Structure</Typography>
+                  <Typography sx={{ fontSize: '0.9rem' }}>Bonne utilisation de la méthode STAR. Tes exemples sont percutants.</Typography>
+                </Box>
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: 3 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: colors.blue }}>Débit Vocal</Typography>
+                  <Typography sx={{ fontSize: '0.9rem' }}>Environ 130 mots/min. C’est parfait pour la clarté.</Typography>
+                </Box>
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: 3 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: colors.pink }}>Tic de langage</Typography>
+                  <Typography sx={{ fontSize: '0.9rem' }}>Attention au mot "Euh" (4 fois détecté). Respire plus !</Typography>
+                </Box>
+              </Grid>
+            </Grid>
+            <Button variant="contained" sx={{ mt: 3, background: colors.primary }} onClick={() => setFeedbackOpen(false)}>Continuer l'entraînement</Button>
+          </MotionBox>
+        )}
+
+        <MotionBox initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} sx={{ mb: 8 }}>
           <Typography variant="h4" sx={{ fontWeight: 800, mb: 4, textAlign: 'center' }}>📝 Questions fréquentes</Typography>
           {questionsFrequentes.map((item, index) => (
             <MotionBox key={index} variants={fadeInUp}>
