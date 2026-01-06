@@ -1,4 +1,5 @@
 import UserHeader from '../../components/UserHeader';
+import Footer from '../../components/layout/Footer';
 
 export default function CandidatLayout({
     children,
@@ -8,7 +9,10 @@ export default function CandidatLayout({
     return (
         <>
             <UserHeader />
-            {children}
+            <main style={{ minHeight: 'calc(100vh - 400px)' }}>
+                {children}
+            </main>
+            <Footer />
         </>
     );
 }

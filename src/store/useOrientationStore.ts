@@ -11,8 +11,10 @@ interface OrientationState {
         step6: string[];
     };
     results: any[];
+    aiAnalysis: string | null;
     setAnswers: (step: string, value: any) => void;
     setResults: (results: any[]) => void;
+    setAiAnalysis: (analysis: string | null) => void;
     resetQuiz: () => void;
     generateMistralPrompt: () => string;
 }
@@ -31,12 +33,14 @@ export const useOrientationStore = create<OrientationState>()(
         (set, get) => ({
             answers: initialAnswers,
             results: [],
+            aiAnalysis: null,
             setAnswers: (step, value) =>
                 set((state) => ({
                     answers: { ...state.answers, [step]: value }
                 })),
             setResults: (results) => set({ results }),
-            resetQuiz: () => set({ answers: initialAnswers, results: [] }),
+            setAiAnalysis: (aiAnalysis) => set({ aiAnalysis }),
+            resetQuiz: () => set({ answers: initialAnswers, results: [], aiAnalysis: null }),
             generateMistralPrompt: () => {
                 const { answers } = get();
                 return `

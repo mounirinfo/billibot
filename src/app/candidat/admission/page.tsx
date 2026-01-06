@@ -32,7 +32,8 @@ import {
   AssignmentTurnedIn
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import ParcoursupJournal from '@/components/candidat/ParcoursupJournal';
 
 const MotionBox = motion.create(Box);
 const MotionCard = motion.create(Card);
@@ -467,59 +468,12 @@ export default function AdmissionPage() {
             <Card sx={{ borderRadius: 4, border: `2px solid ${colors.blue}`, overflow: 'hidden' }}>
               <Box sx={{ background: `linear-gradient(135deg, ${colors.blue}, #2196F3)`, py: 3, px: 4 }}>
                 <Typography variant="h5" sx={{ color: '#fff', fontWeight: 700 }}>
-                  📋 Étapes Parcoursup
+                  📈 Journal de bord Parcoursup
                 </Typography>
               </Box>
               <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-                <Stepper orientation="vertical">
-                  {(isFunMode ? funCopy.parcoursup : parcoursupSteps).map((step: any, index: number) => {
-                    return (
-                      <Step key={index} active expanded>
-                        <StepLabel
-                          StepIconComponent={() => {
-                            const IconComp = !isFunMode ? step.icon : null;
-                            return (
-                              <Box sx={{
-                                width: 45,
-                                height: 45,
-                                borderRadius: '50%',
-                                background: isFunMode ? colors.purple : `linear-gradient(135deg, ${colors.blue}, #2196F3)`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: isFunMode ? '1.5rem' : 'inherit'
-                              }}>
-                                {isFunMode ? (
-                                  step.emoji
-                                ) : (
-                                  IconComp && <IconComp sx={{ color: '#fff', fontSize: 24 }} />
-                                )}
-                              </Box>
-                            );
-                          }}
-                        >
-                          <Box sx={{ ml: 1 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 700 }}>{step.title}</Typography>
-                            {step.date && <Chip label={step.date} size="small" sx={{ mt: 0.5 }} />}
-                          </Box>
-                        </StepLabel>
-                        <StepContent>
-                          <Typography sx={{ color: '#555', mb: 2 }}>{step.description || step.desc}</Typography>
-                          {!isFunMode && step.details && (
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                              {step.details.map((d: string, i: number) => (
-                                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <CheckCircle sx={{ fontSize: 16, color: colors.blue }} />
-                                  <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>{d}</Typography>
-                                </Box>
-                              ))}
-                            </Box>
-                          )}
-                        </StepContent>
-                      </Step>
-                    );
-                  })}
-                </Stepper>
+                <ParcoursupJournal />
+
                 <Box sx={{ mt: 4, textAlign: 'center' }}>
                   <Button
                     variant="contained"

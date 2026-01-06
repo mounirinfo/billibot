@@ -20,6 +20,7 @@ import { ArrowBack, ArrowForward, CheckCircle, EmojiObjects, Refresh } from '@mu
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useOrientationStore } from '@/store/useOrientationStore';
+import ParcoursupJournal from '@/components/candidat/ParcoursupJournal';
 
 const MotionBox = motion.create(Box);
 const MotionCard = motion.create(Card);
@@ -90,10 +91,10 @@ const questionData = {
     title: '5️⃣ Tes non-négociables',
     subtitle: 'Ce qui est impératif pour toi (max 2)',
     options: [
-      { id: 'alt_req', label: 'Alternance obligatoire', emoji: '⚠️' },
-      { id: 'no_maths', label: 'Peu de maths', emoji: '📉' },
-      { id: 'intl_req', label: 'International indispensable', emoji: '🌐' },
-      { id: 'short_route', label: 'Cursus court (Bac+2)', emoji: '⏱️' }
+      { id: 'initiale_req', label: '100 % Initiale', emoji: '🏫' },
+      { id: 'short_req', label: 'Formation courte ( 6 / 8 / 12 mois)', emoji: '⏱️' },
+      { id: 'long_req', label: 'Formation Longue (Bac+2 , Bac+3, Bac+4, Bac+5)', emoji: '🎓' },
+      { id: 'intl_req', label: 'International indispensable', emoji: '🌐' }
     ]
   },
   step6: {
@@ -161,25 +162,61 @@ const getOptionLabel = (stepKey: string, id: string) => {
 
 export default function OrientationPage() {
   const router = useRouter();
-  const { answers, setAnswers, resetQuiz, results, setResults, generateMistralPrompt } = useOrientationStore();
+  const { answers, setAnswers, resetQuiz, results, setResults, generateMistralPrompt, aiAnalysis, setAiAnalysis } = useOrientationStore();
   const [activeStep, setActiveStep] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const loadingMessages = [
+    "Analyse de tes passions...",
+    "Exploration des BTS en France...",
+    "Calcul de tes affinités...",
+    "BilliBot finalise ton futur !"
+  ];
 
-  const currentStepKey = `step${activeStep}` as keyof typeof questionData;
-  const currentQuestion = (questionData as any)[currentStepKey] || { title: '...', subtitle: '', options: [], sliders: [], content: '' };
-  const progress = (activeStep / (steps.length - 1)) * 100;
-
-  const handleNext = () => {
+  const handleNext = async () => {
     if (activeStep === 6) {
       setLoading(true);
-      const rec = getRecommendedFormations();
-      setResults(rec);
-      setTimeout(() => { setLoading(false); setShowResults(true); }, 2000);
+      setLoadingStep(0);
+
+
+      const interval = setInterval(() => {
+        setLoadingStep(prev => (prev < 3 ? prev + 1 : prev));
+      }, 800);
+
+      try {
+        const response = await fetch('/api/orientation-analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: generateMistralPrompt() })
+        });
+        const data = await response.json();
+
+        if (data.formations) {
+          setResults(data.formations);
+        }
+        if (data.globalAdvice) {
+          setAiAnalysis(data.globalAdvice);
+        }
+
+        clearInterval(interval);
+        setTimeout(() => {
+          setLoading(false);
+          setShowResults(true);
+        }, 500);
+
+      } catch (error) {
+        console.error('Error generating AI results:', error);
+        setLoading(false);
+      }
     } else {
       setActiveStep(prev => prev + 1);
     }
   };
+
+  const currentStepKey = `step${activeStep}` as keyof typeof questionData;
+  const currentQuestion = (questionData as any)[currentStepKey] || { title: '...', subtitle: '', options: [], sliders: [], content: '' };
+  const progress = (activeStep / (steps.length - 1)) * 100;
 
   const handleBack = () => setActiveStep(prev => prev - 1);
 
@@ -267,6 +304,42 @@ export default function OrientationPage() {
               </MotionCard>
             </Grid>
 
+
+            <Grid size={{ xs: 12 }}>
+              <MotionCard
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                sx={{
+                  borderRadius: 4,
+                  mb: 4,
+                  background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
+                  color: '#fff',
+                  border: `2px solid ${colors.secondary}`,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                  overflow: 'visible'
+                }}
+              >
+                <CardContent sx={{ p: 4 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: colors.secondary, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    🤖 L'analyse personnalisée de BilliBot
+                  </Typography>
+                  <Typography
+                    sx={{
+                      lineHeight: 1.8,
+                      fontSize: '1.1rem',
+                      fontStyle: 'italic',
+                      color: 'rgba(255,255,255,0.9)',
+                      borderLeft: `4px solid ${colors.primary}`,
+                      pl: 3,
+                      py: 1
+                    }}
+                  >
+                    {aiAnalysis || "Analyse en cours..."}
+                  </Typography>
+                </CardContent>
+              </MotionCard>
+            </Grid>
+
             {
               results.map((formation: any, index: number) => (
                 <Grid size={{ xs: 12 }} key={formation.id}>
@@ -274,39 +347,123 @@ export default function OrientationPage() {
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.15 }}
-                    whileHover={{ scale: 1.01 }}
-                    sx={{ borderRadius: 4, border: `2px solid ${formation.color}`, overflow: 'hidden', mb: 2 }}
+                    whileHover={{
+                      y: -10,
+                      boxShadow: `0 20px 40px ${formation.color}33`,
+                    }}
+                    sx={{
+                      borderRadius: 6,
+                      border: `1px solid ${formation.color}44`,
+                      background: 'rgba(255, 255, 255, 0.8)',
+                      backdropFilter: 'blur(10px)',
+                      overflow: 'hidden',
+                      mb: 4,
+                      position: 'relative',
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, height: '6px',
+                        background: formation.color
+                      }
+                    }}
                   >
                     <CardContent sx={{ p: 4 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-                        <Typography sx={{ fontSize: '3rem', mr: 2 }}>{formation.emoji}</Typography>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="h5" sx={{ fontWeight: 700, color: formation.color }}>{formation.name}</Typography>
-                          <Typography sx={{ color: '#666', fontSize: '0.9rem' }}>{formation.fullName}</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+                        <Box
+                          sx={{
+                            width: 80, height: 80,
+                            borderRadius: 4,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '2.5rem',
+                            background: `${formation.color}15`,
+                            border: `1px solid ${formation.color}33`,
+                            boxShadow: `0 10px 20px ${formation.color}22`
+                          }}
+                        >
+                          {formation.emoji}
                         </Box>
-                        <Chip
-                          label={`${formation.match}% Match`}
-                          sx={{ background: formation.color, color: '#fff', fontWeight: 700, px: 1 }}
-                        />
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="h4" sx={{ fontWeight: 800, color: formation.color, letterSpacing: '-0.5px' }}>
+                            {formation.name}
+                          </Typography>
+                          <Typography sx={{ color: '#555', fontWeight: 600, fontSize: '1rem' }}>
+                            {formation.fullName}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                          <Typography variant="h3" sx={{ fontWeight: 900, color: formation.color, lineHeight: 1 }}>
+                            {formation.match}%
+                          </Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 700, color: '#999', textTransform: 'uppercase' }}>
+                            Match Score
+                          </Typography>
+                        </Box>
                       </Box>
 
-                      <Typography sx={{ color: '#555', mb: 3 }}>{formation.description}</Typography>
+                      <Typography sx={{ color: '#444', mb: 4, fontSize: '1.1rem', lineHeight: 1.6 }}>
+                        {formation.description}
+                      </Typography>
 
-                      <Box sx={{ mb: 3 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: '#333' }}>✨ Pourquoi ce match ?</Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      <Box sx={{ mb: 4 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, color: '#333', display: 'flex', alignItems: 'center', gap: 1 }}>
+                          🚀 Pourquoi cet avenir ?
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
                           {formation.badges.map((badge: string) => (
-                            <Chip key={badge} label={badge} size="small" sx={{ background: `${formation.color}15`, color: formation.color, fontWeight: 600 }} />
+                            <Chip
+                              key={badge}
+                              label={badge}
+                              sx={{
+                                background: 'white',
+                                color: formation.color,
+                                fontWeight: 700,
+                                border: `1px solid ${formation.color}44`,
+                                px: 1,
+                                '&:hover': { background: formation.color, color: 'white' }
+                              }}
+                            />
                           ))}
                         </Box>
                       </Box>
 
                       <Grid container spacing={2}>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                          <Button variant="contained" fullWidth sx={{ py: 1.5, background: formation.color, fontWeight: 600 }}>Candidater</Button>
+                          <MotionButton
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            variant="contained"
+                            fullWidth
+                            sx={{
+                              py: 2,
+                              background: `linear-gradient(135deg, ${formation.color}, ${formation.color}dd)`,
+                              fontWeight: 800,
+                              borderRadius: 3,
+                              fontSize: '1rem',
+                              boxShadow: `0 10px 20px ${formation.color}44`
+                            }}
+                          >
+                            Candidater maintenant
+                          </MotionButton>
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                          <Button variant="outlined" fullWidth sx={{ py: 1.5, borderColor: formation.color, color: formation.color, fontWeight: 600 }}>En savoir plus</Button>
+                          <MotionButton
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            variant="outlined"
+                            fullWidth
+                            sx={{
+                              py: 2,
+                              borderColor: formation.color,
+                              color: formation.color,
+                              fontWeight: 800,
+                              borderRadius: 3,
+                              fontSize: '1rem',
+                              borderWidth: '2px',
+                              '&:hover': { borderWidth: '2px', background: `${formation.color}05` }
+                            }}
+                          >
+                            Détails de la formation
+                          </MotionButton>
                         </Grid>
                       </Grid>
                     </CardContent>
@@ -314,11 +471,30 @@ export default function OrientationPage() {
                 </Grid>
               ))
             }
+
+            <Grid size={{ xs: 12 }}>
+              <MotionBox
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                sx={{ mt: 6 }}
+              >
+                <ParcoursupJournal />
+              </MotionBox>
+            </Grid>
           </Grid >
 
-          <Box sx={{ textAlign: 'center', mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
+          <Box sx={{ textAlign: 'center', mt: 4, display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Button variant="outlined" onClick={() => router.push('/candidat')}>Retour au menu</Button>
             <Button variant="contained" startIcon={<Refresh />} onClick={handleReset} sx={{ background: colors.primary }}>Refaire le quiz</Button>
+            <Button
+              variant="text"
+              color="error"
+              onClick={handleReset}
+              sx={{ fontWeight: 600 }}
+            >
+              Supprimer mes réponses
+            </Button>
           </Box>
         </Container >
       </Box >
@@ -328,18 +504,29 @@ export default function OrientationPage() {
   if (loading) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})` }}>
-        <MotionBox initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" sx={{ mb: 4, fontWeight: 700, color: '#fff' }}>BilliBot analyse ton profil...</Typography>
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-            {[0, 1, 2].map(i => (
-              <MotionBox
-                key={i}
-                animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                sx={{ width: 16, height: 16, borderRadius: '50%', background: '#fff' }}
-              />
-            ))}
+        <MotionBox initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} sx={{ textAlign: 'center', width: '100%', maxWidth: 400, px: 3 }}>
+          <Box sx={{ position: 'relative', mb: 4 }}>
+            <CircularProgress size={80} sx={{ color: '#fff' }} />
+            <Typography sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontWeight: 800, color: '#fff' }}>
+              {loadingStep + 1}
+            </Typography>
           </Box>
+          <Typography variant="h5" sx={{ mb: 2, fontWeight: 700, color: '#fff' }}>
+            {loadingMessages[loadingStep]}
+          </Typography>
+          <LinearProgress
+            variant="determinate"
+            value={(loadingStep + 1) * 25}
+            sx={{
+              height: 10,
+              borderRadius: 5,
+              bgcolor: 'rgba(255,255,255,0.2)',
+              '& .MuiLinearProgress-bar': { bgcolor: '#fff' }
+            }}
+          />
+          <Typography sx={{ mt: 2, color: 'rgba(255,255,255,0.8)', fontStyle: 'italic' }}>
+            BilliBot prépare ton futur en France...
+          </Typography>
         </MotionBox>
       </Box>
     );

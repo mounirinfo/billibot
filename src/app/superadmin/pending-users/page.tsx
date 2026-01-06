@@ -57,6 +57,7 @@ import {
   VerifiedUser,
   Block,
   Info,
+  Delete,
 } from '@mui/icons-material';
 
 interface User {
@@ -114,6 +115,8 @@ export default function SuperAdminDashboard() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [tabValue, setTabValue] = useState(0);
   const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, approved: 0, rejected: 0 });
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -228,7 +231,7 @@ export default function SuperAdminDashboard() {
 
   const handleValidateUser = async () => {
     if (!selectedUser) return;
-    
+
     if (action === 'reject' && !rejectionReason.trim()) {
       setMessage('Veuillez indiquer la raison du rejet');
       return;
@@ -261,6 +264,35 @@ export default function SuperAdminDashboard() {
       setMessage('Une erreur est survenue');
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleOpenDelete = (user: User) => {
+    setSelectedUser(user);
+    setDeleteDialog(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: selectedUser.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage(data.message);
+        loadData();
+        setDeleteDialog(false);
+      } else {
+        setMessage(data.error || 'Erreur lors de la suppression');
+      }
+    } catch (error) {
+      setMessage('Une erreur est survenue lors de la suppression');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -332,10 +364,10 @@ export default function SuperAdminDashboard() {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#F8F9FA' }}>
       {/* AppBar moderne */}
-      <AppBar 
-        position="sticky" 
-        elevation={0} 
-        sx={{ 
+      <AppBar
+        position="sticky"
+        elevation={0}
+        sx={{
           background: 'linear-gradient(135deg, #2D9B94 0%, #1F7872 100%)',
           backdropFilter: 'blur(10px)',
         }}
@@ -355,10 +387,10 @@ export default function SuperAdminDashboard() {
             </Box>
           </Box>
 
-          <IconButton 
-            color="inherit" 
+          <IconButton
+            color="inherit"
             onClick={(e) => setAnchorEl(e.currentTarget)}
-            sx={{ 
+            sx={{
               bgcolor: 'rgba(255,255,255,0.1)',
               '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
             }}
@@ -381,9 +413,9 @@ export default function SuperAdminDashboard() {
               <Typography variant="caption" color="text.secondary">
                 {profile?.email}
               </Typography>
-              <Chip 
-                label="Super Admin" 
-                size="small" 
+              <Chip
+                label="Super Admin"
+                size="small"
                 sx={{ mt: 1, bgcolor: '#F44336', color: 'white', fontWeight: 600 }}
               />
             </Box>
@@ -398,8 +430,8 @@ export default function SuperAdminDashboard() {
       <Box sx={{ p: 4, maxWidth: 1600, mx: 'auto' }}>
         {/* Message */}
         {message && (
-          <Alert 
-            severity={message.includes('succès') ? 'success' : 'error'} 
+          <Alert
+            severity={message.includes('succès') ? 'success' : 'error'}
             sx={{ mb: 3, borderRadius: 2 }}
             onClose={() => setMessage('')}
           >
@@ -408,11 +440,11 @@ export default function SuperAdminDashboard() {
         )}
 
         {/* Statistiques */}
-        <Box sx={{ 
-          display: 'grid', 
+        <Box sx={{
+          display: 'grid',
           gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' },
           gap: 3,
-          mb: 4 
+          mb: 4
         }}>
           <Card sx={{ borderRadius: 3, boxShadow: 3, background: 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)' }}>
             <CardContent>
@@ -489,16 +521,16 @@ export default function SuperAdminDashboard() {
 
         {/* Onglets */}
         <Paper sx={{ borderRadius: 3, mb: 3, boxShadow: 2 }}>
-          <Tabs 
-            value={tabValue} 
+          <Tabs
+            value={tabValue}
             onChange={(e, newValue) => setTabValue(newValue)}
-            sx={{ 
-              borderBottom: 1, 
+            sx={{
+              borderBottom: 1,
               borderColor: 'divider',
               '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: '1rem' }
             }}
           >
-            <Tab 
+            <Tab
               label={
                 <Badge badgeContent={pendingUsers.length} color="error">
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -506,15 +538,15 @@ export default function SuperAdminDashboard() {
                     En Attente
                   </Box>
                 </Badge>
-              } 
+              }
             />
-            <Tab 
+            <Tab
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Groups />
                   Tous les Utilisateurs
                 </Box>
-              } 
+              }
             />
           </Tabs>
         </Paper>
@@ -537,16 +569,16 @@ export default function SuperAdminDashboard() {
                 </Typography>
               </Paper>
             ) : (
-              <Box sx={{ 
-                display: 'grid', 
+              <Box sx={{
+                display: 'grid',
                 gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
-                gap: 3 
+                gap: 3
               }}>
                 {pendingUsers.map((user) => (
-                  <Card 
+                  <Card
                     key={user.id}
-                    sx={{ 
-                      borderRadius: 3, 
+                    sx={{
+                      borderRadius: 3,
                       boxShadow: 3,
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       '&:hover': {
@@ -557,11 +589,11 @@ export default function SuperAdminDashboard() {
                   >
                     <CardContent sx={{ p: 3 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <Avatar 
-                          sx={{ 
-                            bgcolor: getRoleColor(user.role), 
-                            width: 56, 
-                            height: 56, 
+                        <Avatar
+                          sx={{
+                            bgcolor: getRoleColor(user.role),
+                            width: 56,
+                            height: 56,
                             mr: 2,
                             boxShadow: 2,
                           }}
@@ -668,12 +700,12 @@ export default function SuperAdminDashboard() {
               <Typography variant="h5" fontWeight={700} sx={{ mb: 2, color: '#2D9B94' }}>
                 👥 Tous les utilisateurs
               </Typography>
-              
+
               <Paper sx={{ p: 3, borderRadius: 3, mb: 3, boxShadow: 2 }}>
-                <Box sx={{ 
-                  display: 'grid', 
+                <Box sx={{
+                  display: 'grid',
                   gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-                  gap: 2 
+                  gap: 2
                 }}>
                   <TextField
                     fullWidth
@@ -813,6 +845,13 @@ export default function SuperAdminDashboard() {
                             >
                               <Info />
                             </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenDelete(user)}
+                              sx={{ color: '#F44336' }}
+                            >
+                              <Delete rotate={45} />
+                            </IconButton>
                           </TableCell>
                         </TableRow>
                       ))
@@ -847,11 +886,11 @@ export default function SuperAdminDashboard() {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Avatar 
-                      sx={{ 
-                        bgcolor: getRoleColor(selectedUser.role), 
-                        width: 72, 
-                        height: 72, 
+                    <Avatar
+                      sx={{
+                        bgcolor: getRoleColor(selectedUser.role),
+                        width: 72,
+                        height: 72,
                         mr: 2,
                         boxShadow: 3,
                       }}
@@ -881,10 +920,10 @@ export default function SuperAdminDashboard() {
                   </Box>
                 </Box>
 
-                <Box sx={{ 
-                  display: 'grid', 
+                <Box sx={{
+                  display: 'grid',
                   gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
-                  gap: 2 
+                  gap: 2
                 }}>
                   <Paper sx={{ p: 2, bgcolor: '#F9FAFB', borderRadius: 2 }}>
                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -1065,6 +1104,35 @@ export default function SuperAdminDashboard() {
               ) : (
                 action === 'approve' ? 'Confirmer la validation' : 'Confirmer le rejet'
               )}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Dialog Confirmation Suppression */}
+        <Dialog open={deleteDialog} onClose={() => setDeleteDialog(false)}>
+          <DialogTitle sx={{ fontWeight: 700, bgcolor: '#FFEBEE', color: '#B71C1C' }}>
+            ⚠️ Confirmer la suppression
+          </DialogTitle>
+          <DialogContent sx={{ mt: 2 }}>
+            <Typography>
+              Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{selectedUser?.full_name}</strong> ?
+            </Typography>
+            <Typography variant="body2" color="error" sx={{ mt: 2, fontWeight: 600 }}>
+              Cette action est irréversible et supprimera toutes les données associées au profil.
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ p: 3 }}>
+            <Button onClick={() => setDeleteDialog(false)} disabled={isDeleting} sx={{ fontWeight: 600 }}>
+              Annuler
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleDeleteUser}
+              disabled={isDeleting}
+              sx={{ fontWeight: 600, minWidth: 120 }}
+            >
+              {isDeleting ? <CircularProgress size={24} color="inherit" /> : 'Supprimer'}
             </Button>
           </DialogActions>
         </Dialog>

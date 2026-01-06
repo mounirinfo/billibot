@@ -1,7 +1,10 @@
+'use client';
+
 import UserHeader from '../../components/UserHeader';
 import Footer from '../../components/layout/Footer';
+import { Box } from '@mui/material';
 
-export default function EtudiantLayout({
+export default function LegalLayout({
     children,
 }: {
     children: React.ReactNode
@@ -9,9 +12,9 @@ export default function EtudiantLayout({
     return (
         <>
             <UserHeader />
-            <main style={{ minHeight: 'calc(100vh - 400px)' }}>
+            <Box component="main" sx={{ pt: { xs: 8, md: 10 } }}>
                 {children}
-            </main>
+            </Box>
             <Footer />
         </>
     );
