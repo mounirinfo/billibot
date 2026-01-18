@@ -14,9 +14,11 @@ import {
   LinearProgress,
   Grid,
   Chip,
-  CircularProgress
+  CircularProgress,
+  Snackbar,
+  Alert
 } from '@mui/material';
-import { ArrowBack, ArrowForward, CheckCircle, EmojiObjects, Refresh } from '@mui/icons-material';
+import { ArrowBack, ArrowForward, CheckCircle, EmojiObjects, Refresh, AutoAwesome } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useOrientationStore } from '@/store/useOrientationStore';
@@ -58,7 +60,7 @@ const questionData = {
   },
   step2: {
     title: '2️⃣ Ton style de travail',
-    subtitle: 'Ce qui compte le plus pour toi (0-3)',
+    subtitle: 'Tire sur le curseur pour choisir ton style. (3 = Très important, 1 = Peu important)',
     sliders: [
       { id: 'crea', label: 'Créativité', emoji: '🎨' },
       { id: 'social', label: 'Relationnel', emoji: '👥' },
@@ -163,9 +165,12 @@ const getOptionLabel = (stepKey: string, id: string) => {
 export default function OrientationPage() {
   const router = useRouter();
   const { answers, setAnswers, resetQuiz, results, setResults, generateMistralPrompt, aiAnalysis, setAiAnalysis } = useOrientationStore();
+  const [loading, setLoading] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const [showResults, setShowResults] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
   const [loadingStep, setLoadingStep] = useState(0);
   const loadingMessages = [
     "Analyse de tes passions...",
@@ -208,6 +213,7 @@ export default function OrientationPage() {
       } catch (error) {
         console.error('Error generating AI results:', error);
         setLoading(false);
+        setIsGenerating(false);
       }
     } else {
       setActiveStep(prev => prev + 1);
@@ -339,6 +345,38 @@ export default function OrientationPage() {
                 </CardContent>
               </MotionCard>
             </Grid>
+            {/* Floating Scroll Indicator - Fun BilliBot Guide */}
+            <Box sx={{
+              position: 'fixed',
+              bottom: 30,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 2000,
+              pointerEvents: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+            }}>
+              <MotionBox
+                animate={{ y: [0, 8, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                sx={{
+                  bgcolor: '#fff',
+                  py: 1, px: 2.5,
+                  borderRadius: 8,
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+                  border: `2px solid ${colors.primary}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5
+                }}
+              >
+                <Typography sx={{ fontSize: '1.2rem' }}>🤖</Typography>
+                <Typography sx={{ fontWeight: 900, color: colors.primary, fontSize: '0.85rem', letterSpacing: '0.5px' }}>
+                  SCROLLE POUR LA SUITE ! 👇
+                </Typography>
+              </MotionBox>
+            </Box>
 
             {
               results.map((formation: any, index: number) => (
@@ -471,17 +509,6 @@ export default function OrientationPage() {
                 </Grid>
               ))
             }
-
-            <Grid size={{ xs: 12 }}>
-              <MotionBox
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                sx={{ mt: 6 }}
-              >
-                <ParcoursupJournal />
-              </MotionBox>
-            </Grid>
           </Grid >
 
           <Box sx={{ textAlign: 'center', mt: 4, display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -533,7 +560,20 @@ export default function OrientationPage() {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', background: '#FAFBFF', overflow: 'hidden' }}>
+    <Box sx={{
+      minHeight: '100vh',
+      background: '#FAFBFF',
+      overflowX: 'hidden',
+      /* Fun Custom Scrollbar */
+      '&::-webkit-scrollbar': { width: '10px' },
+      '&::-webkit-scrollbar-track': { background: '#f1f1f1' },
+      '&::-webkit-scrollbar-thumb': {
+        background: `linear-gradient(${colors.primary}, ${colors.secondary})`,
+        borderRadius: '10px',
+        border: '2px solid #f1f1f1'
+      },
+      '&::-webkit-scrollbar-thumb:hover': { background: colors.primaryDark }
+    }}>
       <Box sx={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark}, ${colors.secondary})`, pt: 14, pb: 8 }}>
         <Container maxWidth="md">
           <Button startIcon={<ArrowBack />} onClick={() => router.push('/candidat')} sx={{ color: '#fff', mb: 3 }}>Retour</Button>
@@ -611,80 +651,307 @@ export default function OrientationPage() {
               </Box>
             ) : activeStep === 2 ? (
               <Box>
-                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{currentQuestion.title}</Typography>
-                <Typography sx={{ color: '#666', mb: 4 }}>{currentQuestion.subtitle}</Typography>
-                {(currentQuestion as any).sliders.map((s: any) => (
-                  <Box key={s.id} sx={{ mb: 3 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography sx={{ fontWeight: 600 }}>{s.emoji} {s.label}</Typography>
-                      <Typography sx={{ color: colors.primary, fontWeight: 700 }}>{answers.step2[s.id as keyof typeof answers.step2]}</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 800, mb: 1, color: '#1a1a2e' }}>{currentQuestion.title}</Typography>
+                <Typography sx={{ color: '#666', mb: 4, fontWeight: 500 }}>{currentQuestion.subtitle}</Typography>
+
+                {(currentQuestion as any).sliders.map((s: any) => {
+                  const val = answers.step2[s.id as keyof typeof answers.step2];
+                  return (
+                    <Box key={s.id} sx={{ mb: 6, position: 'relative' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Typography sx={{ fontSize: '1.5rem' }}>{s.emoji}</Typography>
+                          <Typography sx={{ fontWeight: 800, color: '#333', fontSize: '1.1rem' }}>{s.label}</Typography>
+                        </Box>
+                        <Chip
+                          label={val === 3 ? "Priorité Max 🚀" : val === 1 ? "Secondaire ☁️" : "Important 👍"}
+                          size="small"
+                          sx={{
+                            background: val === 3 ? colors.secondary : val === 1 ? '#eee' : colors.primary,
+                            color: val === 3 ? '#000' : val === 1 ? '#666' : '#fff',
+                            fontWeight: 800,
+                            borderRadius: '8px'
+                          }}
+                        />
+                      </Box>
+
+                      <Box sx={{
+                        position: 'relative',
+                        height: 70, // Reduced height
+                        display: 'flex',
+                        alignItems: 'center',
+                        mb: 0.5, // Reduced margin
+                        px: 0, // Removed large padding
+                        boxSizing: 'border-box'
+                      }}>
+                        {/* Mechanical Rope/Track */}
+                        <Box sx={{
+                          position: 'absolute',
+                          left: 0,
+                          right: 0,
+                          height: 8,
+                          background: '#e8e8e8',
+                          borderRadius: 4,
+                          overflow: 'hidden',
+                          boxShadow: 'inset 0 3px 6px rgba(0,0,0,0.1)'
+                        }}>
+                          <Box sx={{
+                            height: '100%',
+                            width: `${((val - 1) / 2) * 100}%`,
+                            background: `linear-gradient(90deg, ${colors.primary}, ${colors.secondary})`,
+                            transition: 'width 0.3s ease'
+                          }} />
+                        </Box>
+
+                        {/* BilliBot THUMB - STRICT BOUNDARIES */}
+                        <MotionBox
+                          animate={{
+                            left: `${((val - 1) / 2) * 100}%`,
+                            translateX: `-${((val - 1) / 2) * 100}%` // EXACT MATH: Stays inside 0-100%
+                          }}
+                          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                          sx={{
+                            position: 'absolute',
+                            width: 80,
+                            height: 70,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            pointerEvents: 'none',
+                            zIndex: 4,
+                          }}
+                        >
+                          <MotionBox
+                            animate={{
+                              rotate: val > 1 ? [-10, 10, -10] : 0,
+                              scale: val === 3 ? 1.2 : 1
+                            }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                          >
+                            <svg width="55" height="55" viewBox="0 0 100 100">
+                              <rect x="25" y="25" width="50" height="50" rx="10" fill={colors.primary} />
+                              <circle cx="40" cy="40" r="4" fill="white" />
+                              <circle cx="60" cy="40" r="4" fill="white" />
+                              <path
+                                d={val === 3 ? "M 35 60 Q 50 52 65 60" : "M 35 60 Q 50 68 65 60"}
+                                stroke="white" strokeWidth="4" fill="none"
+                              />
+                            </svg>
+                          </MotionBox>
+                          <Typography sx={{
+                            fontSize: '0.7rem',
+                            fontWeight: 900,
+                            color: colors.primary,
+                            bgcolor: '#fff',
+                            px: 1.2, py: 0.3, borderRadius: '6px',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                            mt: -1,
+                            whiteSpace: 'nowrap',
+                            border: `1.5px solid ${colors.primary}`,
+                            zIndex: 10
+                          }}>
+                            {val === 3 ? 'MAX ! 🔥' : val === 2 ? 'OUI ! ✊' : 'TIRE ! 🤖'}
+                          </Typography>
+                        </MotionBox>
+
+                        <input
+                          type="range"
+                          min="1"
+                          max="3"
+                          step="1"
+                          value={val}
+                          onChange={(e) => setAnswers('step2', { ...answers.step2, [s.id]: parseInt(e.target.value) })}
+                          style={{
+                            width: '100%',
+                            position: 'relative',
+                            zIndex: 10,
+                            opacity: 0,
+                            cursor: 'grab',
+                            height: '50px'
+                          }}
+                        />
+                      </Box>
                     </Box>
-                    <input
-                      type="range"
-                      min="0"
-                      max="3"
-                      value={answers.step2[s.id as keyof typeof answers.step2]}
-                      onChange={(e) => setAnswers('step2', { ...answers.step2, [s.id]: parseInt(e.target.value) })}
-                      style={{ width: '100%', accentColor: colors.primary, cursor: 'pointer' }}
-                    />
-                  </Box>
-                ))}
+                  );
+                })}
               </Box>
             ) : (
               <Box>
-                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{currentQuestion.title}</Typography>
-                <Typography sx={{ color: '#666', mb: 3 }}>{currentQuestion.subtitle}</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 800, mb: 1, color: '#1a1a2e' }}>{currentQuestion.title}</Typography>
+                <Typography sx={{ color: '#666', mb: 3, fontWeight: 500 }}>{currentQuestion.subtitle}</Typography>
                 <Grid container spacing={2}>
                   {(currentQuestion as any).options?.map((option: any) => {
-                    const stepAnswers = answers[currentStepKey as keyof typeof answers];
-                    const isSelected = Array.isArray(stepAnswers)
-                      ? stepAnswers.includes(option.id)
-                      : stepAnswers === option.id;
+                    const stepAnswers = answers[currentStepKey as keyof typeof answers] as string[];
+                    const isSelected = stepAnswers.includes(option.id);
                     return (
                       <Grid size={{ xs: 12, sm: 6 }} key={option.id}>
                         <MotionButton
                           fullWidth
                           variant={isSelected ? 'contained' : 'outlined'}
                           onClick={() => {
-                            if (Array.isArray(stepAnswers)) {
-                              const newArr = isSelected
-                                ? stepAnswers.filter((id: string) => id !== option.id)
-                                : [...stepAnswers, option.id];
-                              setAnswers(currentStepKey, newArr);
-                            } else {
-                              setAnswers(currentStepKey, option.id);
+                            const limit = currentStepKey === 'step3' ? 3 : currentStepKey === 'step5' ? 2 : currentStepKey === 'step6' ? 1 : 99;
+                            if (!isSelected && stepAnswers.length >= limit) {
+                              setAlertMessage(`Attention : Limite de ${limit === 1 ? 'un seul choix possible' : limit + ' choix maximum'} ! 🛑`);
+                              setShowAlert(true);
+                              return;
+                            }
+                            const newArr = isSelected
+                              ? stepAnswers.filter((id: string) => id !== option.id)
+                              : [...stepAnswers, option.id];
+                            setAnswers(currentStepKey, newArr);
+                          }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          sx={{
+                            py: 2.5, px: 3, borderRadius: '16px', textTransform: 'none', justifyContent: 'flex-start',
+                            background: isSelected ? `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})` : '#fff',
+                            color: isSelected ? '#fff' : '#333',
+                            borderColor: isSelected ? colors.primary : '#eee',
+                            boxShadow: isSelected ? `0 10px 20px ${colors.primary}44` : 'none',
+                            '&:hover': {
+                              borderColor: colors.primary,
+                              background: isSelected ? `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})` : `${colors.primary}08`
                             }
                           }}
-                          sx={{
-                            py: 2, px: 2, borderRadius: 3, textTransform: 'none', justifyContent: 'flex-start',
-                            background: isSelected ? colors.primary : 'transparent',
-                            color: isSelected ? '#fff' : '#333',
-                            borderColor: isSelected ? colors.primary : '#ddd'
-                          }}
                         >
-                          <Typography sx={{ fontSize: '1.5rem', mr: 2 }}>{option.emoji}</Typography>
-                          <Typography>{option.label}</Typography>
+                          <Typography sx={{ fontSize: '1.8rem', mr: 2.5 }}>{option.emoji}</Typography>
+                          <Typography sx={{ fontWeight: 700, fontSize: '1.05rem' }}>{option.label}</Typography>
                         </MotionButton>
                       </Grid>
                     );
                   })}
                 </Grid>
+
+                <Snackbar
+                  open={showAlert}
+                  autoHideDuration={4000}
+                  onClose={() => setShowAlert(false)}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                >
+                  <Alert
+                    onClose={() => setShowAlert(false)}
+                    severity="warning"
+                    variant="filled"
+                    sx={{ width: '100%', borderRadius: '12px', fontWeight: 700 }}
+                  >
+                    {alertMessage}
+                  </Alert>
+                </Snackbar>
               </Box>
             )}
           </CardContent>
         </MotionCard>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
-          <Button disabled={activeStep === 0} onClick={handleBack} startIcon={<ArrowBack />}>Précédent</Button>
-          <Button
-            variant="contained"
-            onClick={handleNext}
-            endIcon={<ArrowForward />}
-            sx={{ px: 4, background: colors.primary, borderRadius: 2 }}
-          >
-            {activeStep === steps.length - 2 ? 'Découvrir mes résultats' : 'Suivant'}
-          </Button>
-        </Box>
+        {activeStep > 0 && (
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mt: 0.5, // Absolute minimum
+            pt: 2,
+            borderTop: '1px solid #eee'
+          }}>
+            <Button
+              onClick={handleBack}
+              startIcon={<ArrowBack />}
+              sx={{
+                color: '#999',
+                fontWeight: 800,
+                textTransform: 'none',
+                '&:hover': { background: 'transparent', color: colors.primary }
+              }}
+            >
+              Précédent
+            </Button>
+
+            {activeStep === steps.length - 2 ? (
+              <MotionButton
+                variant="contained"
+                onClick={handleNext}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                whileHover={{
+                  scale: 1.1,
+                  boxShadow: `0 0 30px ${colors.secondary}, 0 0 60px ${colors.primary}66`,
+                }}
+                whileTap={{ scale: 0.95 }}
+                sx={{
+                  position: 'relative',
+                  overflow: 'hidden',
+                  px: 8,
+                  py: 2.5,
+                  borderRadius: '30px',
+                  fontWeight: 950,
+                  fontSize: '1.4rem',
+                  textTransform: 'none',
+                  letterSpacing: '1px',
+                  color: '#000',
+                  background: `linear-gradient(45deg, ${colors.secondary}, #FFE66D, ${colors.primary}, ${colors.blue}, ${colors.secondary})`,
+                  backgroundSize: '300% 300%',
+                  animation: 'shimmerGradient 4s ease infinite',
+                  '@keyframes shimmerGradient': {
+                    '0%': { backgroundPosition: '0% 50%' },
+                    '50%': { backgroundPosition: '100% 50%' },
+                    '100%': { backgroundPosition: '0% 50%' }
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '-50%',
+                    left: '-50%',
+                    width: '200%',
+                    height: '200%',
+                    background: 'rgba(255,255,255,0.2)',
+                    transform: 'rotate(45deg)',
+                    animation: 'shineEffect 3s infinite',
+                    pointerEvents: 'none'
+                  },
+                  '@keyframes shineEffect': {
+                    '0%': { transform: 'translateX(-150%) rotate(45deg)' },
+                    '100%': { transform: 'translateX(150%) rotate(45deg)' }
+                  },
+                  border: '3px solid #fff',
+                  boxShadow: `0 20px 50px ${colors.primary}44`
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <AutoAwesome sx={{ animation: 'pulseIcon 2s infinite' }} />
+                  DÉCOUVRIR MON AVENIR
+                  <AutoAwesome sx={{ animation: 'pulseIcon 2s infinite alternate-reverse' }} />
+                </Box>
+                <style>
+                  {`
+                    @keyframes pulseIcon {
+                      0% { transform: scale(1) rotate(0deg); opacity: 0.7; }
+                      50% { transform: scale(1.3) rotate(15deg); opacity: 1; }
+                      100% { transform: scale(1) rotate(0deg); opacity: 0.7; }
+                    }
+                  `}
+                </style>
+              </MotionButton>
+            ) : (
+              <MotionButton
+                variant="contained"
+                onClick={handleNext}
+                endIcon={<ArrowForward />}
+                sx={{
+                  px: 10,
+                  py: 2,
+                  background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`,
+                  borderRadius: '20px',
+                  fontWeight: 900,
+                  fontSize: '1.2rem',
+                  textTransform: 'none',
+                  color: '#fff',
+                  boxShadow: `0 10px 25px ${colors.primary}44`
+                }}
+              >
+                Suivant
+              </MotionButton>
+            )}
+          </Box>
+        )}
       </Container>
     </Box>
   );

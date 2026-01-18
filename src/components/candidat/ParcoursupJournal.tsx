@@ -12,6 +12,7 @@ import {
     EmojiObjectsOutlined,
     NotificationsActive
 } from '@mui/icons-material';
+import { Slider } from '@mui/material';
 
 const MotionBox = motion.create(Box);
 const MotionCard = motion.create(Card);
@@ -89,12 +90,20 @@ export default function ParcoursupJournal() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-    const today = new Date(2026, 0, 6);
+    const today = new Date();
+    const [scrubPhase, setScrubPhase] = React.useState(0);
 
-    const currentPhase = useMemo(() => {
-        return PARCOURSUP_PHASES.find(phase => today >= phase.startDate && today <= phase.endDate)
-            || PARCOURSUP_PHASES[0];
+    const currentDatePhaseIndex = useMemo(() => {
+        const index = PARCOURSUP_PHASES.findIndex(phase => today >= phase.startDate && today <= phase.endDate);
+        return index !== -1 ? index : 0;
     }, [today]);
+
+    // Initialize slider with the real current phase if not already set manually
+    React.useEffect(() => {
+        setScrubPhase(currentDatePhaseIndex);
+    }, [currentDatePhaseIndex]);
+
+    const activePhase = PARCOURSUP_PHASES[scrubPhase] || PARCOURSUP_PHASES[0];
 
     const getPhaseIcon = (id: number) => {
         switch (id) {
@@ -146,10 +155,43 @@ export default function ParcoursupJournal() {
                     />
                 )}
 
+                <Box sx={{ px: isMobile ? 2 : 10, mb: 2 }}>
+                    <Slider
+                        value={scrubPhase}
+                        step={1}
+                        marks={PARCOURSUP_PHASES.map((p, i) => ({ value: i, label: `${i + 1}` }))}
+                        min={0}
+                        max={PARCOURSUP_PHASES.length - 1}
+                        onChange={(_, val) => setScrubPhase(val as number)}
+                        sx={{
+                            color: activePhase.color,
+                            height: 6,
+                            '& .MuiSlider-thumb': {
+                                width: 50,
+                                height: 50,
+                                backgroundColor: '#fff',
+                                border: `4px solid ${activePhase.color}`,
+                                transition: 'all 0.3s ease',
+                                '&:hover': { boxShadow: `0 0 0 10px ${activePhase.color}22` },
+                                '&::after': {
+                                    content: `"${scrubPhase + 1} 🤖"`,
+                                    fontSize: '1.2rem',
+                                    fontWeight: 900,
+                                    color: activePhase.color
+                                }
+                            },
+                            '& .MuiSlider-markLabel': {
+                                fontWeight: 800,
+                                color: activePhase.color,
+                                top: 45
+                            }
+                        }}
+                    />
+                </Box>
+
                 {PARCOURSUP_PHASES.map((phase, index) => {
-                    const isActive = currentPhase.id === phase.id;
-                    const isPast = today > phase.endDate;
-                    const isFuture = today < phase.startDate;
+                    const isActive = activePhase.id === phase.id;
+                    const isPast = index < scrubPhase;
 
                     return (
                         <MotionBox

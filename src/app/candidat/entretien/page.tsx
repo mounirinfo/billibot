@@ -13,7 +13,8 @@ import {
   AccordionSummary,
   AccordionDetails,
   CircularProgress,
-  Chip
+  Chip,
+  Tooltip
 } from '@mui/material';
 import {
   ExpandMore,
@@ -24,10 +25,11 @@ import {
   Lightbulb,
   Warning,
   CheckCircle,
-  ArrowForward
+  ArrowForward,
+  AssignmentTurnedIn
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const MotionBox = motion.create(Box);
 const MotionCard = motion.create(Card);
@@ -88,20 +90,24 @@ const questionsSurprise = [
 
 const templates = {
   STAR: {
-    name: 'Méthode STAR',
+    name: 'Raconter une expérience (en 4 étapes)',
+    coachTip: '🌟 "Salut ! Je t\'aide à structurer une expérience vécue pour qu\'elle soit percutante."',
+    miniExample: 'Ex. : J’ai mené un projet de vente (Situation) / Objectif : convaincre 10 clients (Tâche) / J’ai organisé des démonstrations (Action) / Résultat : 12 ventes ! (Résultat)',
     steps: [
-      { label: 'Situation', desc: 'Contexte de l’action', icon: '📍' },
-      { label: 'Task', desc: 'Objectif ou problème', icon: '🎯' },
-      { label: 'Action', desc: 'Ce que TU as fait', icon: '⚡' },
-      { label: 'Result', desc: 'Résultat / Apprentissage', icon: '🏆' }
+      { label: 'Situation', desc: '🪄 Décris-moi ta situation récente (où, quand ?)', icon: '📍' },
+      { label: 'Task', desc: '🎯 Quel était ton objectif ou le problème à régler ?', icon: '🎯' },
+      { label: 'Action', desc: '⚡ Raconte-moi exactement ce que TU as fait.', icon: '⚡' },
+      { label: 'Result', desc: '🏆 Quel a été le résultat et qu\'en as-tu appris ?', icon: '🏆' }
     ]
   },
   '3C': {
-    name: 'Méthode 3C',
+    name: 'Se présenter (en 3 axes)',
+    coachTip: '🎯 "Idéale pour te présenter ! On va faire court, humain et mémorable."',
+    miniExample: 'Parle-moi de toi, de tes compétences et de ton objectif pro pour demain.',
     steps: [
-      { label: 'Contexte', desc: 'Le cadre général', icon: '📽️' },
-      { label: 'Compétences', desc: 'Tes atouts mobilisés', icon: '🛠️' },
-      { label: 'Cible', desc: 'Pourquoi ici demain ?', icon: '🎯' }
+      { label: 'Contexte', desc: '📽️ Qui es-tu et d\'où viens-tu en quelques mots ?', icon: '📽️' },
+      { label: 'Compétences', desc: '🛠️ Quelles sont tes 3 forces pour cette école ?', icon: '🛠️' },
+      { label: 'Cible', desc: '🎯 Pourquoi veux-tu nous rejoindre demain ?', icon: '🎯' }
     ]
   }
 };
@@ -118,6 +124,11 @@ export default function EntretienPage() {
   const [simStep, setSimStep] = useState(0);
   const [activeTemplate, setActiveTemplate] = useState<'STAR' | '3C' | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+
+  // Wizard States
+  const [wizardStep, setWizardStep] = useState(0); // 0: Mode, 1: Guidance, 2: Action
+  const [selectedMode, setSelectedMode] = useState<'simulation' | 'pitch30' | 'pitch60' | null>(null);
+  const [needsGuidance, setNeedsGuidance] = useState<boolean | null>(null);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -220,94 +231,260 @@ export default function EntretienPage() {
           </MotionBox>
         )}
 
-        <MotionBox initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} sx={{ mb: 8 }}>
-          <Typography variant="h4" sx={{ fontWeight: 800, mb: 4, textAlign: 'center' }}>⚡ BilliCoach Tools</Typography>
-          <Grid container spacing={4}>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <MotionCard variants={fadeInUp} whileHover={{ y: -8 }} sx={{ height: '100%', borderRadius: 4, background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`, color: '#fff' }}>
-                <CardContent sx={{ p: 4, textAlign: 'center' }}>
-                  <Typography variant="h5" sx={{ fontWeight: 800, mb: 2 }}>🎭 Simulation Live</Typography>
-                  <Typography sx={{ color: 'rgba(255,255,255,0.8)', mb: 3 }}>Simulation d'entretien realiste avec camera activee.</Typography>
-                  <Button variant="contained" size="large" fullWidth onClick={startSimulation} sx={{ background: colors.secondary, color: '#1a1a2e', fontWeight: 700 }}>Lancer la simulation</Button>
-                </CardContent>
-              </MotionCard>
+        <Box sx={{ mb: 10 }}>
+          <Grid container spacing={6}>
+            <Grid size={{ xs: 12, md: 7 }}>
+              <MotionBox initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
+                <Typography variant="h4" sx={{ fontWeight: 800, mb: 4 }}>📝 Ton "Projet Motivé" Express</Typography>
+                <Typography sx={{ color: '#666', mb: 4 }}>Prépare ton entretien en structurant tes motivations. Choisis ta filière pour t'en inspirer :</Typography>
+
+                <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
+                  {['Business/Vente', 'Communication', 'International'].map(topic => (
+                    <Button
+                      key={topic}
+                      variant="outlined"
+                      onClick={() => alert(`Génération du template pour ${topic}... (Ceci est une simulation)`)}
+                      sx={{ borderRadius: 3, border: `2px solid ${colors.primary}`, color: colors.primary, fontWeight: 700 }}
+                    >
+                      {topic}
+                    </Button>
+                  ))}
+                </Box>
+
+                <Card sx={{ bgcolor: '#f9f9f9', border: '1px dashed #ccc', p: 3, borderRadius: 4 }}>
+                  <Typography variant="subtitle2" sx={{ color: colors.primary, fontWeight: 800, mb: 1 }}>STRUCTURE CONSEILLÉE :</Typography>
+                  <Box component="ul" sx={{ pl: 2, color: '#555' }}>
+                    <li><strong>Moi :</strong> Mon parcours actuel et mes passions.</li>
+                    <li><strong>Vous :</strong> Pourquoi cette école précisément ?</li>
+                    <li><strong>Nous :</strong> Ce que je vais apporter à la classe.</li>
+                  </Box>
+                </Card>
+              </MotionBox>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 8 }}>
-              <MotionCard variants={fadeInUp} whileHover={{ y: -8 }} sx={{ height: '100%', borderRadius: 4 }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 800, mb: 3 }}>🛠️ Méthodes de réponse</Typography>
-                  <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                    {Object.keys(templates).map(t => (
-                      <Button
-                        key={t}
-                        variant={activeTemplate === t ? 'contained' : 'outlined'}
-                        onClick={() => setActiveTemplate(t as any)}
-                        sx={{ flex: 1, py: 1.5, borderRadius: 2 }}
-                      >
-                        {t}
-                      </Button>
-                    ))}
-                  </Box>
-                  {activeTemplate && (
-                    <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 1 }}>
-                      {templates[activeTemplate].steps.map((s, i) => (
-                        <Box key={i} sx={{ minWidth: 140, p: 2, bgcolor: '#f5f5f5', borderRadius: 3, textAlign: 'center' }}>
-                          <Typography sx={{ fontSize: '1.5rem', mb: 1 }}>{s.icon}</Typography>
-                          <Typography variant="caption" sx={{ fontWeight: 800, display: 'block' }}>{s.label}</Typography>
-                          <Typography variant="caption" sx={{ color: '#666', fontSize: '0.7rem' }}>{s.desc}</Typography>
-                        </Box>
-                      ))}
+            <Grid size={{ xs: 12, md: 5 }}>
+              <MotionBox initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
+                <Typography variant="h4" sx={{ fontWeight: 800, mb: 4 }}>📁 Dossier de motivation</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {[
+                    'Bulletins de 1ère et Terminale',
+                    'CV à jour (utilisez nos conseils !)',
+                    'Pièce d\'identité',
+                    'Avis de poursuite d\'études'
+                  ].map((doc, i) => (
+                    <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, bgcolor: '#FAFBFF', borderRadius: 3, border: '1px solid #eee' }}>
+                      <AssignmentTurnedIn sx={{ color: colors.primary }} />
+                      <Typography sx={{ fontWeight: 600 }}>{doc}</Typography>
                     </Box>
-                  )}
-                  {!activeTemplate && <Typography sx={{ color: '#999', textAlign: 'center', py: 4 }}>Choisis une méthode pour voir la structure de réponse idéale.</Typography>}
-                </CardContent>
-              </MotionCard>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <MotionCard variants={fadeInUp} sx={{ borderRadius: 4, border: `2px solid ${colors.blue}` }}>
-                <CardContent sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-                    <CircularProgress variant="determinate" value={(timer30 / 30) * 100} size={80} thickness={6} sx={{ color: getTimerColor(timer30, 30) }} />
-                    <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700 }}>{timer30}s</Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>Pitch Flash</Typography>
-                    <Typography variant="caption" sx={{ color: '#666', mb: 2, display: 'block' }}>Efficacité & Concision</Typography>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button size="small" variant="contained" onClick={() => setIsRunning30(!isRunning30)} sx={{ background: isRunning30 ? colors.pink : colors.primary }}>{isRunning30 ? 'Stop' : 'Start'}</Button>
-                      <Button size="small" variant="outlined" onClick={() => setTimer30(30)}>Reset</Button>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </MotionCard>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <MotionCard variants={fadeInUp} sx={{ borderRadius: 4, border: `2px solid ${colors.pink}` }}>
-                <CardContent sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-                    <CircularProgress variant="determinate" value={(timer60 / 60) * 100} size={80} thickness={6} sx={{ color: getTimerColor(timer60, 60) }} />
-                    <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700 }}>{timer60}s</Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>Pitch Expert</Typography>
-                    <Typography variant="caption" sx={{ color: '#666', mb: 2, display: 'block' }}>Détails & Storytelling</Typography>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button size="small" variant="contained" onClick={() => setIsRunning60(!isRunning60)} sx={{ background: isRunning60 ? colors.pink : colors.blue }}>{isRunning60 ? 'Stop' : 'Start'}</Button>
-                      <Button size="small" variant="outlined" onClick={() => setTimer60(60)}>Reset</Button>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </MotionCard>
+                  ))}
+                </Box>
+              </MotionBox>
             </Grid>
           </Grid>
-        </MotionBox>
+        </Box>
+
+        <AnimatePresence mode="wait">
+          {wizardStep === 0 && (
+            <MotionBox key="step0" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+              <Box sx={{ p: 4, borderRadius: 6, bgcolor: 'rgba(45, 155, 148, 0.05)', border: '2px dashed rgba(45, 155, 148, 0.2)', mb: 6 }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, textAlign: 'center' }}>🎯 ÉTAPE 1 : Ton Mode d'Entraînement</Typography>
+                <Typography sx={{ textAlign: 'center', color: '#666', mb: 4 }}>Quelle interface te rassure le plus pour aujourd'hui ?</Typography>
+
+                <Grid container spacing={4}>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <MotionCard
+                      whileHover={{ y: -8, boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
+                      onClick={() => { setSelectedMode('simulation'); setWizardStep(1); }}
+                      sx={{ p: 3, cursor: 'pointer', height: '100%', borderRadius: 4, textAlign: 'center', border: selectedMode === 'simulation' ? `2px solid ${colors.primary}` : '2px solid transparent' }}
+                    >
+                      <Typography sx={{ fontSize: '3rem', mb: 2 }}>🎭</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>Entraînement réel</Typography>
+                      <Typography variant="body2" sx={{ color: '#666' }}>Simulation complète avec caméra pour une immersion totale.</Typography>
+                    </MotionCard>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <MotionCard
+                      whileHover={{ y: -8, boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
+                      onClick={() => { setSelectedMode('pitch30'); setWizardStep(1); }}
+                      sx={{ p: 3, cursor: 'pointer', height: '100%', borderRadius: 4, textAlign: 'center', border: selectedMode === 'pitch30' ? `2px solid ${colors.primary}` : '2px solid transparent' }}
+                    >
+                      <Typography sx={{ fontSize: '3rem', mb: 2 }}>⚡</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>Présentation rapide</Typography>
+                      <Typography variant="body2" sx={{ color: '#666' }}>30 secondes pour aller à l'essentiel sans stress.</Typography>
+                    </MotionCard>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <MotionCard
+                      whileHover={{ y: -8, boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
+                      onClick={() => { setSelectedMode('pitch60'); setWizardStep(1); }}
+                      sx={{ p: 3, cursor: 'pointer', height: '100%', borderRadius: 4, textAlign: 'center', border: selectedMode === 'pitch60' ? `2px solid ${colors.primary}` : '2px solid transparent' }}
+                    >
+                      <Typography sx={{ fontSize: '3rem', mb: 2 }}>📚</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>Présentation complète</Typography>
+                      <Typography variant="body2" sx={{ color: '#666' }}>1 minute pour détailler ton parcours et ton projet.</Typography>
+                    </MotionCard>
+                  </Grid>
+                </Grid>
+              </Box>
+            </MotionBox>
+          )}
+
+          {wizardStep === 1 && (
+            <MotionBox key="step1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+              <Box sx={{ p: 4, borderRadius: 6, bgcolor: '#fff', border: '1px solid #eee', mb: 8, textAlign: 'center', position: 'relative' }}>
+                <Button
+                  startIcon={<ArrowBack />}
+                  onClick={() => setWizardStep(0)}
+                  sx={{
+                    position: { xs: 'relative', md: 'absolute' },
+                    left: 20,
+                    top: 20,
+                    mb: { xs: 2, md: 0 },
+                    bgcolor: 'rgba(0,0,0,0.05)',
+                    px: 2,
+                    borderRadius: 2,
+                    fontWeight: 700,
+                    color: '#666',
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.1)' }
+                  }}
+                >
+                  Changer de mode
+                </Button>
+                <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, mt: { xs: 0, md: 4 } }}>🤖 ÉTAPE 2 : Veux-tu être guidé(e) ?</Typography>
+                <Typography sx={{ color: '#666', mb: 4 }}>Je peux t'aider à structurer ta pensée avant de te lancer.</Typography>
+
+                <Box sx={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                  <MotionCard
+                    whileHover={{ scale: 1.05 }}
+                    onClick={() => { setNeedsGuidance(true); setWizardStep(2); }}
+                    sx={{ p: 4, cursor: 'pointer', width: 250, borderRadius: 4, border: `2px solid ${colors.primary}`, bgcolor: 'rgba(45, 155, 148, 0.05)' }}
+                  >
+                    <CheckCircle sx={{ fontSize: '3rem', color: colors.primary, mb: 2 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 800 }}>Oui, aide-moi !</Typography>
+                    <Typography variant="caption" sx={{ color: '#666' }}>Utilise mes guides pas-à-pas (Récit ou Pitch).</Typography>
+                  </MotionCard>
+
+                  <MotionCard
+                    whileHover={{ scale: 1.05 }}
+                    onClick={() => { setNeedsGuidance(false); setWizardStep(2); setActiveTemplate(null); }}
+                    sx={{ p: 4, cursor: 'pointer', width: 250, borderRadius: 4, border: '2px solid #eee' }}
+                  >
+                    <PlayArrow sx={{ fontSize: '3rem', color: '#666', mb: 2 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 800 }}>Non, je gère !</Typography>
+                    <Typography variant="caption" sx={{ color: '#666' }}>Passe directement à l'entraînement libre.</Typography>
+                  </MotionCard>
+                </Box>
+              </Box>
+            </MotionBox>
+          )}
+
+          {wizardStep === 2 && (
+            <MotionBox key="step2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <Box sx={{ p: 4, borderRadius: 6, bgcolor: '#fff', border: '1px solid #eee', mb: 8, position: 'relative' }}>
+                <Button
+                  startIcon={<ArrowBack />}
+                  onClick={() => setWizardStep(1)}
+                  sx={{
+                    position: { xs: 'relative', md: 'absolute' },
+                    left: 20,
+                    top: 20,
+                    mb: { xs: 2, md: 0 },
+                    bgcolor: 'rgba(0,0,0,0.05)',
+                    px: 2,
+                    borderRadius: 2,
+                    fontWeight: 700,
+                    color: '#666',
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.1)' }
+                  }}
+                >
+                  Retour
+                </Button>
+                <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, textAlign: 'center', mt: { xs: 0, md: 4 } }}>🔥 ÉTAPE 3 : Passage à l'acte</Typography>
+                <Typography sx={{ textAlign: 'center', color: '#666', mb: 4 }}>
+                  {needsGuidance ? "Choisis ton guide et suis BilliBot !" : "Tu es prêt(e). Respire un grand coup et lance-toi !"}
+                </Typography>
+
+                {needsGuidance && (
+                  <Box sx={{ mb: 6 }}>
+                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mb: 4 }}>
+                      {Object.keys(templates).map(t => (
+                        <Tooltip key={t} title={templates[t as keyof typeof templates].miniExample} arrow placement="top">
+                          <Button
+                            variant={activeTemplate === t ? 'contained' : 'outlined'}
+                            onClick={() => setActiveTemplate(t as any)}
+                            sx={{ minWidth: 200, py: 1.5, borderRadius: 3, fontWeight: 800, textTransform: 'none' }}
+                          >
+                            {templates[t as keyof typeof templates].name}
+                          </Button>
+                        </Tooltip>
+                      ))}
+                    </Box>
+
+                    {activeTemplate && (
+                      <MotionBox initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} sx={{ p: 3, bgcolor: '#FAFBFF', borderRadius: 4, border: `2px solid ${colors.primary}33` }}>
+                        <Typography sx={{ textAlign: 'center', mb: 4, fontSize: '1.2rem', fontWeight: 800, color: colors.primaryDark }}>
+                          {templates[activeTemplate].coachTip}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 2, justifyContent: 'center' }}>
+                          {templates[activeTemplate].steps.map((s, i) => (
+                            <Box key={i} sx={{ minWidth: 160, p: 3, bgcolor: '#fff', borderRadius: 4, textAlign: 'center', border: `2px solid ${colors.primary}11`, boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+                              <Typography sx={{ fontSize: '2rem', mb: 1 }}>{s.icon}</Typography>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 900, color: colors.primary, mb: 0.5 }}>{s.label}</Typography>
+                              <Typography variant="body2" sx={{ color: '#666', lineHeight: 1.3, fontWeight: 500 }}>{s.desc}</Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                      </MotionBox>
+                    )}
+                  </Box>
+                )}
+
+                <Box sx={{ textAlign: 'center', mt: 4 }}>
+                  {selectedMode === 'simulation' ? (
+                    <Button variant="contained" size="large" onClick={startSimulation} sx={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`, px: 8, py: 2, borderRadius: 4, fontWeight: 900, fontSize: '1.2rem' }}>
+                      LANCER L'ENTRAÎNEMENT RÉEL 🎯
+                    </Button>
+                  ) : (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                      <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                        <CircularProgress
+                          variant="determinate"
+                          value={selectedMode === 'pitch30' ? (timer30 / 30) * 100 : (timer60 / 60) * 100}
+                          size={120}
+                          thickness={6}
+                          sx={{ color: selectedMode === 'pitch30' ? getTimerColor(timer30, 30) : getTimerColor(timer60, 60) }}
+                        />
+                        <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Typography variant="h4" sx={{ fontWeight: 900 }}>{selectedMode === 'pitch30' ? timer30 : timer60}s</Typography>
+                        </Box>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 2 }}>
+                        <Button
+                          variant="contained"
+                          size="large"
+                          onClick={selectedMode === 'pitch30' ? () => setIsRunning30(!isRunning30) : () => setIsRunning60(!isRunning60)}
+                          sx={{ background: (selectedMode === 'pitch30' ? isRunning30 : isRunning60) ? colors.pink : colors.primary, px: 6, borderRadius: 3 }}
+                        >
+                          {(selectedMode === 'pitch30' ? isRunning30 : isRunning60) ? 'STOPPER' : 'DÉMARRER LE CHRONO'}
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          onClick={selectedMode === 'pitch30' ? () => setTimer30(30) : () => setTimer60(60)}
+                          sx={{ borderRadius: 3 }}
+                        >
+                          RESET
+                        </Button>
+                      </Box>
+                      {((selectedMode === 'pitch30' && timer30 === 0) || (selectedMode === 'pitch60' && timer60 === 0)) && (
+                        <Button variant="contained" sx={{ mt: 2, bgcolor: colors.secondary, color: '#000' }} onClick={() => setFeedbackOpen(true)}>Voir l'analyse 🏆</Button>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+            </MotionBox>
+          )}
+        </AnimatePresence>
 
         {feedbackOpen && (
           <MotionBox initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} sx={{ mb: 8, p: 4, bgcolor: '#e8f5e9', borderRadius: 6, border: `2px solid ${colors.primary}` }}>

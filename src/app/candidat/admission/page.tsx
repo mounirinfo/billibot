@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Container,
   Box,
@@ -13,7 +13,8 @@ import {
   Stepper,
   Step,
   StepLabel,
-  StepContent
+  StepContent,
+  Slider
 } from '@mui/material';
 import {
   CheckCircle,
@@ -148,6 +149,20 @@ export default function AdmissionPage() {
   const [isFunMode, setIsFunMode] = useState(false);
   const [showDiagnostic, setShowDiagnostic] = useState(true);
   const [diagResult, setDiagResult] = useState<'parcoursup' | 'direct' | null>(null);
+  const [scrubStep, setScrubStep] = useState(0);
+  const parcoursupRef = useRef<HTMLDivElement>(null);
+  const directRef = useRef<HTMLDivElement>(null);
+
+  const handleSetPath = (path: 'parcoursup' | 'direct' | null) => {
+    setSelectedPath(path);
+    setScrubStep(0);
+    if (path) {
+      setTimeout(() => {
+        const ref = path === 'parcoursup' ? parcoursupRef : directRef;
+        ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  };
 
   const handleDiagnostic = (reponse: string) => {
     if (reponse === 'bac') {
@@ -286,6 +301,13 @@ export default function AdmissionPage() {
                   label={diagResult === 'parcoursup' ? "On te conseille la voie Parcoursup !" : "Le parcours direct est fait pour toi !"}
                   sx={{ background: colors.secondary, color: '#1a1a2e', fontWeight: 700, p: 2 }}
                 />
+                <Button
+                  size="small"
+                  onClick={() => { setShowDiagnostic(true); setDiagResult(null); }}
+                  sx={{ ml: 2, color: '#fff', textDecoration: 'underline', fontWeight: 700 }}
+                >
+                  Changer mon profil ?
+                </Button>
               </MotionBox>
             )}
           </MotionBox>
@@ -300,7 +322,7 @@ export default function AdmissionPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
               whileHover={{ y: -8, boxShadow: `0 25px 60px ${colors.blue}30` }}
-              onClick={() => setSelectedPath(selectedPath === 'parcoursup' ? null : 'parcoursup')}
+              onClick={() => handleSetPath(selectedPath === 'parcoursup' ? null : 'parcoursup')}
               sx={{
                 cursor: 'pointer',
                 borderRadius: 4,
@@ -381,7 +403,7 @@ export default function AdmissionPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
               whileHover={{ y: -8, boxShadow: `0 25px 60px ${colors.primary}30` }}
-              onClick={() => setSelectedPath(selectedPath === 'direct' ? null : 'direct')}
+              onClick={() => handleSetPath(selectedPath === 'direct' ? null : 'direct')}
               sx={{
                 cursor: 'pointer',
                 borderRadius: 4,
@@ -464,6 +486,7 @@ export default function AdmissionPage() {
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.4 }}
             sx={{ mt: 4 }}
+            ref={parcoursupRef}
           >
             <Card sx={{ borderRadius: 4, border: `2px solid ${colors.blue}`, overflow: 'hidden' }}>
               <Box sx={{ background: `linear-gradient(135deg, ${colors.blue}, #2196F3)`, py: 3, px: 4 }}>
@@ -473,6 +496,99 @@ export default function AdmissionPage() {
               </Box>
               <CardContent sx={{ p: { xs: 2, md: 4 } }}>
                 <ParcoursupJournal />
+
+                <Box sx={{ mt: 6, pt: 6, borderTop: '1px solid #eee' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: colors.blue, textAlign: 'center', mb: 2 }}>
+                    {isFunMode ? 'GLISSE BILLIBOT POUR VOIR LA SUITE ! 🤖' : 'GLISSEZ POUR DÉCOUVRIR LES ÉTAPES DÉTAILLÉES ! 🤖'}
+                  </Typography>
+                  <Box sx={{ px: 4, position: 'relative', mb: 6 }}>
+                    <Slider
+                      defaultValue={0}
+                      step={1}
+                      marks={(isFunMode ? funCopy.parcoursup : parcoursupSteps).map((_, i) => ({ value: i, label: `${i + 1}` }))}
+                      min={0}
+                      max={(isFunMode ? funCopy.parcoursup : parcoursupSteps).length - 1}
+                      onChange={(_, val) => setScrubStep(val as number)}
+                      sx={{
+                        color: colors.blue,
+                        height: 6,
+                        '& .MuiSlider-thumb': {
+                          width: 50,
+                          height: 50,
+                          backgroundColor: '#fff',
+                          border: `4px solid ${colors.blue}`,
+                          '&:hover': { boxShadow: `0 0 0 10px ${colors.blue}22` },
+                          '&::after': {
+                            content: `"${scrubStep + 1} 🤖"`,
+                            fontSize: '1.2rem',
+                            fontWeight: 900,
+                            color: colors.blue
+                          }
+                        },
+                        '& .MuiSlider-markLabel': {
+                          fontWeight: 800,
+                          color: colors.blue,
+                          top: 45
+                        }
+                      }}
+                    />
+                  </Box>
+
+                  <AnimatePresence mode="wait">
+                    <MotionBox
+                      key={scrubStep}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      sx={{
+                        p: 4,
+                        borderRadius: 4,
+                        background: 'rgba(255,255,255,0.5)',
+                        border: `1px solid ${colors.blue}33`
+                      }}
+                    >
+                      {(() => {
+                        const step = (isFunMode ? funCopy.parcoursup : parcoursupSteps)[scrubStep];
+                        if (!step) return null;
+                        return (
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                              <Box sx={{
+                                width: 50, height: 50, borderRadius: 3,
+                                background: isFunMode ? colors.purple : `linear-gradient(135deg, ${colors.blue}, #2196F3)`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                              }}>
+                                {(() => {
+                                  const stepAny = step as any;
+                                  if (isFunMode) return stepAny.emoji;
+                                  const StepIcon = stepAny.icon;
+                                  return StepIcon ? <StepIcon sx={{ color: '#fff' }} /> : null;
+                                })()}
+                              </Box>
+                              <Box>
+                                <Typography variant="h5" sx={{ fontWeight: 800 }}>{step.title}</Typography>
+                                {(step as any).date && <Chip label={(step as any).date} size="small" sx={{ background: `${colors.blue}30`, fontWeight: 700 }} />}
+                              </Box>
+                            </Box>
+                            <Typography sx={{ color: '#444', fontSize: '1.1rem', mb: 3 }}>
+                              {(step as any).description || (step as any).desc}
+                            </Typography>
+                            {!isFunMode && (step as any).details && (
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                                {(step as any).details.map((d: string, i: number) => (
+                                  <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, px: 2, bgcolor: '#fff', borderRadius: 2, border: '1px solid #eee' }}>
+                                    <CheckCircle sx={{ fontSize: 18, color: colors.blue }} />
+                                    <Typography sx={{ fontWeight: 600, color: '#555' }}>{d}</Typography>
+                                  </Box>
+                                ))}
+                              </Box>
+                            )}
+                          </Box>
+                        );
+                      })()}
+                    </MotionBox>
+                  </AnimatePresence>
+                </Box>
 
                 <Box sx={{ mt: 4, textAlign: 'center' }}>
                   <Button
@@ -504,6 +620,7 @@ export default function AdmissionPage() {
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.4 }}
             sx={{ mt: 4 }}
+            ref={directRef}
           >
             <Card sx={{ borderRadius: 4, border: isFunMode ? `2px solid ${colors.purple}` : `2px solid ${colors.primary}`, overflow: 'hidden' }}>
               <Box sx={{ background: isFunMode ? colors.purple : `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`, py: 3, px: 4 }}>
@@ -512,52 +629,97 @@ export default function AdmissionPage() {
                 </Typography>
               </Box>
               <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-                <Stepper orientation="vertical">
-                  {(isFunMode ? funCopy.direct : horsParcoursupSteps).map((step: any, index: number) => {
-                    return (
-                      <Step key={index} active expanded>
-                        <StepLabel
-                          StepIconComponent={(props) => (
+                <Box sx={{ mb: 6 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: colors.primary, textAlign: 'center', mb: 2 }}>
+                    GLISSE BILLIBOT POUR DÉCOUVRIR LES ÉTAPES ! 🤖
+                  </Typography>
+                  <Box sx={{ px: 4, position: 'relative' }}>
+                    <Slider
+                      defaultValue={0}
+                      step={1}
+                      marks={(isFunMode ? funCopy.direct : horsParcoursupSteps).map((_, i) => ({ value: i, label: `${i + 1}` }))}
+                      min={0}
+                      max={(isFunMode ? funCopy.direct : horsParcoursupSteps).length - 1}
+                      onChange={(_, val) => setScrubStep(val as number)}
+                      sx={{
+                        color: colors.primary,
+                        height: 6,
+                        '& .MuiSlider-thumb': {
+                          width: 50,
+                          height: 50,
+                          backgroundColor: '#fff',
+                          border: `4px solid ${colors.primary}`,
+                          '&:hover': { boxShadow: `0 0 0 10px ${colors.primary}22` },
+                          '&::after': {
+                            content: `"${scrubStep + 1} 🤖"`,
+                            fontSize: '1.2rem',
+                            fontWeight: 900,
+                            color: colors.primary
+                          }
+                        },
+                        '& .MuiSlider-markLabel': {
+                          fontWeight: 800,
+                          color: colors.primary,
+                          top: 45
+                        }
+                      }}
+                    />
+                  </Box>
+                </Box>
+
+                <AnimatePresence mode="wait">
+                  <MotionBox
+                    key={scrubStep}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    sx={{
+                      p: 4,
+                      borderRadius: 4,
+                      background: 'rgba(255,255,255,0.5)',
+                      border: `1px solid ${colors.primary}33`
+                    }}
+                  >
+                    {(() => {
+                      const step = (isFunMode ? funCopy.direct : horsParcoursupSteps)[scrubStep];
+                      return (
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                             <Box sx={{
-                              width: 45,
-                              height: 45,
-                              borderRadius: '50%',
+                              width: 50, height: 50, borderRadius: 3,
                               background: isFunMode ? colors.purple : `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: isFunMode ? '1.5rem' : 'inherit'
+                              display: 'flex', alignItems: 'center', justifyContent: 'center'
                             }}>
-                              {isFunMode ? (
-                                step.emoji
-                              ) : (
-                                <step.icon sx={{ color: '#fff', fontSize: 24 }} />
-                              )}
+                              {(() => {
+                                const stepAny = step as any;
+                                if (isFunMode) return stepAny.emoji;
+                                const StepIcon = stepAny.icon;
+                                return StepIcon ? <StepIcon sx={{ color: '#fff' }} /> : null;
+                              })()}
                             </Box>
-                          )}
-                        >
-                          <Box sx={{ ml: 1 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 700 }}>{step.title}</Typography>
-                            {step.date && <Chip label={step.date} size="small" sx={{ mt: 0.5, background: `${colors.secondary}30` }} />}
+                            <Box>
+                              <Typography variant="h5" sx={{ fontWeight: 800 }}>{step.title}</Typography>
+                              {(step as any).date && <Chip label={(step as any).date} size="small" sx={{ background: `${colors.secondary}30`, fontWeight: 700 }} />}
+                            </Box>
                           </Box>
-                        </StepLabel>
-                        <StepContent>
-                          <Typography sx={{ color: '#555', mb: 2 }}>{step.description || step.desc}</Typography>
-                          {!isFunMode && step.details && (
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                              {step.details.map((d: string, i: number) => (
-                                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <CheckCircle sx={{ fontSize: 16, color: colors.primary }} />
-                                  <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>{d}</Typography>
+                          <Typography sx={{ color: '#444', fontSize: '1.1rem', mb: 3 }}>
+                            {(step as any).description || (step as any).desc}
+                          </Typography>
+                          {!isFunMode && (step as any).details && (
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                              {(step as any).details.map((d: string, i: number) => (
+                                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, px: 2, bgcolor: '#fff', borderRadius: 2, border: '1px solid #eee' }}>
+                                  <CheckCircle sx={{ fontSize: 18, color: colors.primary }} />
+                                  <Typography sx={{ fontWeight: 600, color: '#555' }}>{d}</Typography>
                                 </Box>
                               ))}
                             </Box>
                           )}
-                        </StepContent>
-                      </Step>
-                    );
-                  })}
-                </Stepper>
+                        </Box>
+                      );
+                    })()}
+                  </MotionBox>
+                </AnimatePresence>
                 <Box sx={{ mt: 4, textAlign: 'center' }}>
                   <Button
                     variant="contained"
@@ -581,59 +743,6 @@ export default function AdmissionPage() {
         )}
       </Container>
 
-      <Box sx={{ py: { xs: 6, md: 10 }, background: '#fff', mt: 6 }}>
-        <Container maxWidth="lg">
-          <Grid container spacing={6}>
-            <Grid size={{ xs: 12, md: 7 }}>
-              <MotionBox initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
-                <Typography variant="h4" sx={{ fontWeight: 800, mb: 4 }}>📝 Ton "Projet Motivé" Express</Typography>
-                <Typography sx={{ color: '#666', mb: 4 }}>Besoin d'inspiration pour ta lettre de motivation ? Choisis ta filière :</Typography>
-
-                <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
-                  {['Business/Vente', 'Communication', 'International'].map(topic => (
-                    <Button
-                      key={topic}
-                      variant="outlined"
-                      onClick={() => alert(`Génération du template pour ${topic}... (Ceci est une simulation de générateur)`)}
-                      sx={{ borderRadius: 3, border: `2px solid ${colors.primary}`, color: colors.primary, fontWeight: 700 }}
-                    >
-                      {topic}
-                    </Button>
-                  ))}
-                </Box>
-
-                <Card sx={{ bgcolor: '#f9f9f9', border: '1px dashed #ccc', p: 3, borderRadius: 4 }}>
-                  <Typography variant="subtitle2" sx={{ color: colors.primary, fontWeight: 800, mb: 1 }}>STRUCTURE CONSEILLÉE :</Typography>
-                  <Box component="ul" sx={{ pl: 2, color: '#555' }}>
-                    <li><strong>Moi :</strong> Mon parcours actuel et mes passions.</li>
-                    <li><strong>Vous :</strong> Pourquoi cette école précisément ?</li>
-                    <li><strong>Nous :</strong> Ce que je vais apporter à la classe.</li>
-                  </Box>
-                </Card>
-              </MotionBox>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 5 }}>
-              <MotionBox initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
-                <Typography variant="h4" sx={{ fontWeight: 800, mb: 4 }}>📁 Checklist Dossier</Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {[
-                    'Bulletins de 1ère et Terminale',
-                    'CV à jour (utilisez nos conseils !)',
-                    'Pièce d\'identité',
-                    'Avis de poursuite d\'études'
-                  ].map((doc, i) => (
-                    <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, bgcolor: '#FAFBFF', borderRadius: 3, border: '1px solid #eee' }}>
-                      <AssignmentTurnedIn sx={{ color: colors.primary }} />
-                      <Typography sx={{ fontWeight: 600 }}>{doc}</Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </MotionBox>
-            </Grid>
-          </Grid>
-        </Container>
-      </Box>
 
       <Box sx={{ py: { xs: 6, md: 10 }, background: '#F4F7F6' }}>
         <Container maxWidth="lg">
