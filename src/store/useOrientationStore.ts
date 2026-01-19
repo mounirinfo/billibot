@@ -44,16 +44,18 @@ export const useOrientationStore = create<OrientationState>()(
             generateMistralPrompt: () => {
                 const { answers } = get();
                 return `
-          Tu es BilliBot, un expert en orientation. Voici le profil de l'étudiant :
-          - Ce qu'il aime : ${answers.step1.freeText} (Tags: ${answers.step1.tags.join(', ')})
-          - Style : Créa(${answers.step2.crea}), Social(${answers.step2.social}), Data(${answers.step2.data}), Intl(${answers.step2.intl})
-          - Souhaits : ${answers.step3.join(', ')}
-          - Niveau : ${answers.step4}
-          - Contraintes : ${answers.step5.join(', ')}
-          - Boosts : ${answers.step6.join(', ')}
-          
-          Propose une analyse personnalisée et encourageante.
-        `.trim();
+FACTEURS DE DÉCISION DU CANDIDAT :
+- Passion/Intérêt : "${answers.step1.freeText}"
+- Mots-clés identifiés : [${answers.step1.tags.join(', ')}]
+- Style préféré : Créativité=${answers.step2.crea}/3, Relationnel=${answers.step2.social}/3, Analyse=${answers.step2.data}/3, International=${answers.step2.intl}/3
+- Souhaits spécifiques : ${answers.step3.length > 0 ? answers.step3.join(', ') : 'Aucun'}
+- Niveau actuel : ${answers.step4}
+- Contraintes fortes : ${answers.step5.length > 0 ? answers.step5.join(', ') : 'Aucune'}
+- Critère à favoriser : ${answers.step6.length > 0 ? answers.step6.join(', ') : 'Aucun'}
+
+CONSIGNE :
+Analyse ces données pour recommander les 3 formations les plus pertinentes parmi la liste officielle. Explique ton raisonnement pour chaque choix en faisant le lien avec ses passions ou son style de travail.
+`.trim();
             }
         }),
         {

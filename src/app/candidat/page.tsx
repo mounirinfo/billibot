@@ -5,6 +5,7 @@ import { Explore, School, Mic, Phone, ArrowForward, CheckCircle, KeyboardArrowDo
 import { useRouter } from 'next/navigation';
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { useRef, MouseEvent } from 'react';
+import Breadcrumbs from '@/components/Breadcrumbs';
 
 const MotionBox = motion.create(Box);
 const MotionCard = motion.create(Card);
@@ -117,7 +118,8 @@ const modules = [
     color: colors.primary,
     gradient: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
     glowColor: 'rgba(45, 155, 148, 0.4)',
-    link: '/candidat/entretien'
+    link: '/candidat/entretien',
+    hint: 'Générez une lettre de motivation percutante pour votre dossier.'
   },
   {
     icon: School,
@@ -129,7 +131,8 @@ const modules = [
     gradient: `linear-gradient(135deg, ${colors.secondary} 0%, ${colors.secondaryDark} 100%)`,
     glowColor: 'rgba(255, 217, 61, 0.4)',
     textColor: '#1a1a2e',
-    link: '/candidat/admission'
+    link: '/candidat/admission',
+    hint: 'Ne ratez aucune étape clé de votre calendrier d\'admission.'
   },
   {
     icon: Explore,
@@ -140,7 +143,8 @@ const modules = [
     color: colors.primary,
     gradient: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
     glowColor: 'rgba(45, 155, 148, 0.4)',
-    link: '/candidat/orientation'
+    link: '/candidat/orientation',
+    hint: 'Découvrez les métiers qui vous correspondent en quelques clics.'
   },
   {
     icon: Phone,
@@ -152,7 +156,8 @@ const modules = [
     gradient: `linear-gradient(135deg, ${colors.secondary} 0%, ${colors.secondaryDark} 100%)`,
     glowColor: 'rgba(255, 217, 61, 0.4)',
     textColor: '#1a1a2e',
-    link: '/candidat/contact'
+    link: '/candidat/contact',
+    hint: 'Besoin d\'aide ? Nos conseillers vous répondent rapidement.'
   }
 ];
 
@@ -296,7 +301,7 @@ function TiltCard({ module, index }: { module: typeof modules[0]; index: number 
             {module.description}
           </Typography>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 4 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
             {module.features.map((feat, i) => (
               <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <CheckCircle sx={{ fontSize: 18, color: module.color, opacity: 0.8 }} />
@@ -306,6 +311,10 @@ function TiltCard({ module, index }: { module: typeof modules[0]; index: number 
               </Box>
             ))}
           </Box>
+
+          <Typography sx={{ fontSize: '0.8rem', color: '#888', fontStyle: 'italic', mb: 3 }}>
+            {module.hint}
+          </Typography>
 
           <Button
             fullWidth
@@ -320,11 +329,13 @@ function TiltCard({ module, index }: { module: typeof modules[0]; index: number 
               textTransform: 'none',
               fontSize: '1rem',
               mt: 'auto', // Perfectly aligned buttons!
-              boxShadow: `0 10px 20px ${module.glowColor}`,
+              boxShadow: `0 15px 35px ${module.glowColor}`,
               '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: `0 15px 30px ${module.glowColor}`,
-              }
+                transform: 'translateY(-4px)',
+                boxShadow: `0 20px 45px ${module.glowColor}`,
+                filter: 'brightness(1.1)'
+              },
+              transition: 'all 0.3s ease-in-out'
             }}
           >
             {module.title === 'Contact Admissions' ? 'Prendre RDV' : 'C\'est parti !'}
@@ -345,7 +356,7 @@ export default function CandidatDashboard() {
 
   return (
     <Box ref={containerRef} sx={{ background: '#FAFBFF', minHeight: '100vh', overflow: 'hidden' }}>
-
+      <Breadcrumbs />
       <Box
         sx={{
           minHeight: { xs: 'auto', md: '45vh' },

@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useOrientationStore } from '@/store/useOrientationStore';
 import ParcoursupJournal from '@/components/candidat/ParcoursupJournal';
+import Breadcrumbs from '@/components/Breadcrumbs';
 
 const MotionBox = motion.create(Box);
 const MotionCard = motion.create(Card);
@@ -267,9 +268,12 @@ export default function OrientationPage() {
         <Box sx={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark}, ${colors.secondary})`, pt: 6, pb: 12 }}>
           <Container maxWidth="md">
             <MotionBox initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} sx={{ textAlign: 'center' }}>
-              <CheckCircle sx={{ fontSize: 80, color: '#fff', mb: 2 }} />
+              <Box component="img" src="/mascot/billibot_happy.png" sx={{ width: 140, mb: 2, filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.2))' }} alt="BiliBot Happy" />
               <Typography variant="h3" sx={{ fontWeight: 800, color: '#fff', mb: 2 }}>🎉 Tes formations idéales !</Typography>
-              <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>Découvre ton profil BilliBot et tes meilleures options</Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem', mb: 1 }}>C'est incroyable ! BilliBot a analysé tes passions... 🤖✨</Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', fontStyle: 'italic' }}>
+                "On a vraiment trouvé des pépites pour toi. Regarde bien ce qui suit !"
+              </Typography>
             </MotionBox>
           </Container>
         </Box>
@@ -574,13 +578,17 @@ export default function OrientationPage() {
       },
       '&::-webkit-scrollbar-thumb:hover': { background: colors.primaryDark }
     }}>
+      <Breadcrumbs />
       <Box sx={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark}, ${colors.secondary})`, pt: 14, pb: 8 }}>
         <Container maxWidth="md">
           <Button startIcon={<ArrowBack />} onClick={() => router.push('/candidat')} sx={{ color: '#fff', mb: 3 }}>Retour</Button>
           <MotionBox initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} sx={{ textAlign: 'center' }}>
             <Typography variant="h3" sx={{ fontWeight: 800, color: '#fff', mb: 2 }}>🧭 Orientation Express+</Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,0.9)' }}>
+            <Typography sx={{ color: 'rgba(255,255,255,0.9)', mb: 2 }}>
               {activeStep === 0 ? 'Trouvons ta voie idéale' : `Étape ${activeStep} sur ${steps.length - 2}`}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', fontStyle: 'italic' }}>
+              🚀 Répondez spontanément pour obtenir le meilleur matching avec nos formations.
             </Typography>
           </MotionBox>
         </Container>

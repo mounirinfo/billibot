@@ -29,6 +29,7 @@ import {
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import Breadcrumbs from '@/components/Breadcrumbs';
 
 const MotionBox = motion.create(Box);
 const MotionCard = motion.create(Card);
@@ -104,7 +105,7 @@ export default function ContactPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', background: '#FAFBFF', overflow: 'hidden' }}>
-
+      <Breadcrumbs />
       <Box
         sx={{
           background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 50%, ${colors.secondary} 100%)`,
@@ -156,8 +157,11 @@ export default function ContactPage() {
             >
               On reste en contact ? 🤝
             </Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: { xs: '1rem', md: '1.2rem' }, lineHeight: 1.7 }}>
+            <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: { xs: '1rem', md: '1.2rem' }, lineHeight: 1.7, mb: 2 }}>
               Salut ! C'est Candice. Besoin de nous parler ? Je te guide vers la meilleure option pour ton projet.
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', fontStyle: 'italic' }}>
+              ℹ️ Choisissez une option ci-dessous pour démarrer. Je réponds à tous les messages personnellement !
             </Typography>
           </MotionBox>
         </Container>
@@ -313,7 +317,7 @@ export default function ContactPage() {
                 <CheckCircle sx={{ fontSize: 100, color: colors.primary, mb: 4 }} />
                 <Typography variant="h3" sx={{ fontWeight: 900, mb: 2 }}>C'est parti ! 🚀</Typography>
                 <Typography variant="h6" sx={{ color: '#666', mb: 6 }}>Candice a bien reçu ton message. Elle va le lire attentivement et te répondre sous 48h sur ton email.</Typography>
-                <Button variant="contained" size="large" onClick={() => { setWizardStep(0); setSelectedNeed(null); }} sx={{ px: 6, py: 2, borderRadius: 4, bgcolor: colors.primary, fontWeight: 800 }}>Retour à l'accueil contact</Button>
+                <Button variant="contained" size="large" onClick={() => { setWizardStep(0); setSelectedNeed(null); }} sx={{ px: 4, py: 2, borderRadius: 4, bgcolor: colors.primary, fontWeight: 800 }}>Retour à l'accueil contact</Button>
               </Box>
             </MotionBox>
           )}

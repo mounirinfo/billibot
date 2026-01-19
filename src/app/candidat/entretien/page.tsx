@@ -30,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import Breadcrumbs from '@/components/Breadcrumbs';
 
 const MotionBox = motion.create(Box);
 const MotionCard = motion.create(Card);
@@ -161,7 +162,7 @@ export default function EntretienPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', background: '#FAFBFF', overflow: 'hidden' }}>
-
+      <Breadcrumbs />
       <Box sx={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark}, ${colors.secondary})`, pt: { xs: 12, md: 16 }, pb: { xs: 8, md: 12 }, position: 'relative', overflow: 'hidden' }}>
         <MotionBox
           animate={{ rotate: 360 }}
@@ -177,8 +178,11 @@ export default function EntretienPage() {
             <Typography variant="h2" sx={{ fontWeight: 900, color: '#fff', fontSize: { xs: '2rem', md: '3rem' }, mb: 2 }}>
               Prépare ton entretien 🎤
             </Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: { xs: '1rem', md: '1.2rem' } }}>
+            <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: { xs: '1rem', md: '1.2rem' }, mb: 2 }}>
               Coaching personnalisé pour réussir ton entretien de motivation
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', fontStyle: 'italic' }}>
+              🎯 L'entraînement régulier réduit le stress de 80%. BilliBot est là pour vous faire progresser.
             </Typography>
           </MotionBox>
         </Container>

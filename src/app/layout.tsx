@@ -4,6 +4,7 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider } from '@/contexts/AuthContext';
+import FloatingChat from '@/components/FloatingChat';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,10 +22,11 @@ export default function RootLayout({
     <html lang="fr">
       <body className={inter.className}>
         <AppRouterCacheProvider>
-            <CssBaseline />
-            <AuthProvider>
-              {children}
-            </AuthProvider>
+          <CssBaseline />
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+          <FloatingChat />
         </AppRouterCacheProvider>
       </body>
     </html>

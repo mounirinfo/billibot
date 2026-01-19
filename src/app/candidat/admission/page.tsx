@@ -30,11 +30,13 @@ import {
   SentimentVerySatisfied,
   SentimentSatisfiedAlt,
   Psychology,
-  AssignmentTurnedIn
+  AssignmentTurnedIn,
+  RocketLaunch
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import ParcoursupJournal from '@/components/candidat/ParcoursupJournal';
+import Breadcrumbs from '@/components/Breadcrumbs';
 
 const MotionBox = motion.create(Box);
 const MotionCard = motion.create(Card);
@@ -177,7 +179,7 @@ export default function AdmissionPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', background: '#FAFBFF', overflow: 'hidden' }}>
-
+      <Breadcrumbs />
       <Box
         sx={{
           background: isFunMode
@@ -271,12 +273,16 @@ export default function AdmissionPage() {
               sx={{
                 color: 'rgba(255,255,255,0.9)',
                 fontSize: { xs: '1rem', md: '1.2rem' },
-                lineHeight: 1.7
+                lineHeight: 1.7,
+                mb: 4
               }}
             >
               {isFunMode
                 ? 'Pas de stress, on va t\'expliquer comment ça marche sans jargon pompeux.'
                 : 'Choisissez le parcours qui correspond à votre situation : via Parcoursup ou en candidature directe'}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', fontStyle: 'italic' }}>
+              💡 Conseil : Si vous passez le bac cette année, utilisez Parcoursup. Pour les autres, la candidature directe est souvent plus rapide.
             </Typography>
 
             {showDiagnostic && (
@@ -590,7 +596,12 @@ export default function AdmissionPage() {
                   </AnimatePresence>
                 </Box>
 
-                <Box sx={{ mt: 4, textAlign: 'center' }}>
+                <Box sx={{ mt: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <Box sx={{ textAlign: 'center', p: 3, bgcolor: 'rgba(45, 155, 148, 0.05)', borderRadius: 4, border: '1px dashed #2D9B94' }}>
+                    <Box component="img" src="/mascot/billibot_happy.png" sx={{ width: 120, mb: 2 }} alt="BiliBot Happy" />
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: colors.primary, mb: 1 }}>BilliBot est fier de toi ! 🌟</Typography>
+                    <Typography variant="body2" sx={{ color: '#666' }}>Tu as toutes les cartes en main pour réussir ton dossier Parcoursup. Je serai là à chaque étape !</Typography>
+                  </Box>
                   <Button
                     variant="contained"
                     size="large"
@@ -598,14 +609,20 @@ export default function AdmissionPage() {
                     target="_blank"
                     endIcon={<ArrowForward />}
                     sx={{
-                      background: isFunMode ? colors.purple : `linear-gradient(135deg, ${colors.blue}, #2196F3)`,
-                      fontWeight: 700,
-                      px: 5,
-                      py: 1.5,
-                      borderRadius: 3
+                      background: isFunMode ? colors.purple : colors.primary,
+                      fontWeight: 800,
+                      px: 6,
+                      py: 2,
+                      borderRadius: 4,
+                      boxShadow: `0 10px 30px ${colors.primary}40`,
+                      '&:hover': {
+                        transform: 'translateY(-3px)',
+                        boxShadow: `0 15px 35px ${colors.primary}60`,
+                      },
+                      transition: 'all 0.3s'
                     }}
                   >
-                    {isFunMode ? 'On y va ? Go !' : 'Accéder à Parcoursup'}
+                    {isFunMode ? 'On y va ? Go !' : 'Commencer sur Parcoursup'}
                   </Button>
                 </Box>
               </CardContent>
@@ -720,21 +737,34 @@ export default function AdmissionPage() {
                     })()}
                   </MotionBox>
                 </AnimatePresence>
-                <Box sx={{ mt: 4, textAlign: 'center' }}>
+                <Box sx={{ mt: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <Box sx={{ textAlign: 'center', p: 3, bgcolor: 'rgba(255, 217, 61, 0.05)', borderRadius: 4, border: '1px dashed #FFD93D' }}>
+                    <Box component="img" src="/mascot/billibot_cat.png" sx={{ width: 120, mb: 2 }} alt="BiliBot Cat" />
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: colors.secondaryDark, mb: 1 }}>C'est le moment de briller ! 🚀</Typography>
+                    <Typography variant="body2" sx={{ color: '#666' }}>La candidature directe est ultra-rapide. Je garde un œil sur ton dossier pour que tout soit parfait !</Typography>
+                  </Box>
                   <Button
                     variant="contained"
                     size="large"
                     onClick={() => router.push('/candidat/contact')}
-                    endIcon={<ArrowForward />}
+                    endIcon={<RocketLaunch />}
                     sx={{
-                      background: isFunMode ? colors.purple : `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`,
-                      fontWeight: 700,
-                      px: 5,
-                      py: 1.5,
-                      borderRadius: 3
+                      background: colors.secondary,
+                      color: '#1a1a2e',
+                      fontWeight: 900,
+                      px: 6,
+                      py: 2,
+                      borderRadius: 4,
+                      boxShadow: `0 10px 30px ${colors.secondary}40`,
+                      '&:hover': {
+                        transform: 'translateY(-3px)',
+                        boxShadow: `0 15px 35px ${colors.secondary}60`,
+                        background: colors.secondaryDark
+                      },
+                      transition: 'all 0.3s'
                     }}
                   >
-                    {isFunMode ? 'Start Now !' : 'Candidater maintenant'}
+                    {isFunMode ? 'Start Now !' : 'Lancer ma candidature'}
                   </Button>
                 </Box>
               </CardContent>
